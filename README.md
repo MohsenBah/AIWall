@@ -91,4 +91,4 @@ Contributions are welcome once the project scaffold lands. External contribution
 
 ## Background
 
-AIWall builds on ideas explored in [MedSecLab](https://github.com/MohsenBah) — a simulated healthcare AI security lab — and productizes them for home, developer, and enterprise use.
+AIWall builds on ideas explored in [MedSecLab](https://github.com/MohsenBah/MedSecLab) — a simulated healthcare AI security lab — and productizes them for home, developer, and enterprise use.
