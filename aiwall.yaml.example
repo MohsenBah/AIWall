@@ -1,0 +1,29 @@
+server:
+  host: 0.0.0.0
+  port: 8080
+
+providers:
+  - name: openai
+    type: openai-compatible
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    models: ["gpt-*"]
+
+  - name: ollama
+    type: ollama
+    base_url: http://ollama:11434
+    models: ["llama*", "mistral*", "qwen*"]
+
+policies:
+  - name: block-secrets
+    when: input.contains_secret
+    action: block
+
+  - name: warn-large-cost
+    when: estimated_cost > 1.00
+    action: warn
+
+logging:
+  store: sqlite:///data/aiwall.db
+  log_raw_prompts: false
+  retention_days: 90
