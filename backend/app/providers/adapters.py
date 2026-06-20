@@ -1,4 +1,4 @@
-"""Resolve upstream OpenAI-compatible provider targets."""
+"""Provider-type adapters for upstream chat completion requests."""
 
 from __future__ import annotations
 
@@ -7,24 +7,25 @@ from urllib.parse import urljoin
 
 from fastapi import HTTPException
 
-from app.config import AIWallConfig, ProviderConfig
+from app.config import ProviderConfig
 
 OPENAI_COMPATIBLE = "openai-compatible"
-
-
-def select_openai_compatible_provider(config: AIWallConfig) -> ProviderConfig:
-    for provider in config.providers:
-        if provider.type == OPENAI_COMPATIBLE:
-            return provider
-    raise HTTPException(
-        status_code=503,
-        detail="No openai-compatible provider configured",
-    )
+OLLAMA = "ollama"
 
 
 def build_chat_completions_url(provider: ProviderConfig) -> str:
-    base_url = provider.base_url.rstrip("/") + "/"
-    return urljoin(base_url, "chat/completions")
+    base_url = provider.base_url.rstrip("/")
+
+    if provider.type == OPENAI_COMPATIBLE:
+        return urljoin(f"{base_url}/", "chat/completions")
+
+    if provider.type == OLLAMA:
+        return f"{base_url}/v1/chat/completions"
+
+    raise HTTPException(
+        status_code=503,
+        detail=f"Unsupported provider type: {provider.type}",
+    )
 
 
 def build_upstream_headers(

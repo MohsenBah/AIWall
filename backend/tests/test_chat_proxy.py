@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_chat_completions_non_streaming_passthrough(
+async def test_chat_completions_routes_openai_model(
     proxy_client: AsyncClient,
     upstream_requests: list[httpx.Request],
 ) -> None:
@@ -30,7 +30,8 @@ async def test_chat_completions_non_streaming_passthrough(
     assert len(upstream_requests) == 1
     upstream = upstream_requests[0]
     assert upstream.method == "POST"
-    assert upstream.url.path.endswith("/chat/completions")
+    assert upstream.url.host == "api.openai.com"
+    assert upstream.url.path == "/v1/chat/completions"
     assert upstream.headers["authorization"] == "Bearer client-key"
     assert json.loads(upstream.content.decode()) == payload
 
@@ -57,7 +58,28 @@ async def test_chat_completions_streaming_passthrough(
 
 
 @pytest.mark.asyncio
-async def test_chat_completions_requires_openai_compatible_provider(
+async def test_chat_completions_routes_ollama_model(
+    proxy_client: AsyncClient,
+    upstream_requests: list[httpx.Request],
+) -> None:
+    payload = {
+        "model": "llama3.2:1b",
+        "messages": [{"role": "user", "content": "hello"}],
+        "stream": False,
+    }
+
+    response = await proxy_client.post("/v1/chat/completions", json=payload)
+
+    assert response.status_code == 200
+    assert len(upstream_requests) == 1
+    upstream = upstream_requests[0]
+    assert upstream.url.host == "localhost"
+    assert upstream.url.port == 11434
+    assert upstream.url.path == "/v1/chat/completions"
+
+
+@pytest.mark.asyncio
+async def test_chat_completions_requires_configured_provider(
     proxy_client_no_provider: AsyncClient,
 ) -> None:
     response = await proxy_client_no_provider.post(
@@ -66,7 +88,7 @@ async def test_chat_completions_requires_openai_compatible_provider(
     )
 
     assert response.status_code == 503
-    assert response.json()["detail"] == "No openai-compatible provider configured"
+    assert response.json()["detail"] == "No providers configured"
 
 
 @pytest.mark.asyncio

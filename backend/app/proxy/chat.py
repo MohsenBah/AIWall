@@ -10,11 +10,8 @@ from fastapi import HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.config import AIWallConfig
-from app.providers.upstream import (
-    build_chat_completions_url,
-    build_upstream_headers,
-    select_openai_compatible_provider,
-)
+from app.providers.adapters import build_chat_completions_url, build_upstream_headers
+from app.providers.router import extract_model_from_body, select_provider
 
 FORWARD_REQUEST_HEADERS = {
     "authorization",
@@ -48,9 +45,10 @@ class ChatCompletionProxy:
         self._http_client = http_client
 
     async def forward(self, request: Request) -> Response | StreamingResponse:
-        provider = select_openai_compatible_provider(self._config)
-        upstream_url = build_chat_completions_url(provider)
         body = await request.body()
+        model = extract_model_from_body(body)
+        provider = select_provider(self._config, model)
+        upstream_url = build_chat_completions_url(provider)
         incoming_headers = _filter_forward_headers(request.headers)
         upstream_headers = build_upstream_headers(provider, incoming_headers)
 
@@ -66,7 +64,7 @@ class ChatCompletionProxy:
         except httpx.RequestError as exc:
             raise HTTPException(
                 status_code=502,
-                detail=f"Upstream provider unreachable: {exc}",
+                detail=f"Upstream provider unreachable at {upstream_url}: {exc}",
             ) from exc
 
         return Response(
@@ -93,7 +91,7 @@ class ChatCompletionProxy:
         except httpx.RequestError as exc:
             raise HTTPException(
                 status_code=502,
-                detail=f"Upstream provider unreachable: {exc}",
+                detail=f"Upstream provider unreachable at {upstream_url}: {exc}",
             ) from exc
 
         if upstream_response.status_code >= 400:
