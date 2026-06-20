@@ -8,8 +8,9 @@ def test_load_config_from_yaml(example_config: Path) -> None:
 
     assert config.server.host == "127.0.0.1"
     assert config.server.port == 9090
-    assert len(config.providers) == 1
-    assert config.providers[0].name == "ollama"
+    assert len(config.providers) == 2
+    assert config.providers[0].name == "openai"
+    assert config.providers[1].name == "ollama"
     assert len(config.policies) == 1
     assert config.logging.log_raw_prompts is False
 
