@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -15,6 +16,11 @@ server:
   host: 127.0.0.1
   port: 9090
 providers:
+  - name: openai
+    type: openai-compatible
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    models: ["gpt-*"]
   - name: ollama
     type: ollama
     base_url: http://localhost:11434
@@ -32,7 +38,66 @@ logging:
 
 @pytest.fixture
 async def client(example_config: Path):
-    app = create_app(config_path=example_config)
+    mock_transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"ok": True}))
+    http_client = httpx.AsyncClient(transport=mock_transport)
+    app = create_app(config_path=example_config, http_client=http_client)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
+    await http_client.aclose()
+
+
+@pytest.fixture
+def upstream_requests() -> list[httpx.Request]:
+    return []
+
+
+@pytest.fixture
+def upstream_mock_handler(upstream_requests):
+    import json
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        upstream_requests.append(request)
+
+        body = json.loads(request.content.decode())
+        if body.get("stream"):
+            return httpx.Response(
+                200,
+                content=b'data: {"id":"stream-1","choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n',
+                headers={"content-type": "text/event-stream"},
+            )
+
+        return httpx.Response(
+            200,
+            json={
+                "id": "chat-1",
+                "object": "chat.completion",
+                "choices": [{"message": {"role": "assistant", "content": "hello"}}],
+            },
+        )
+
+    return handler
+
+
+@pytest.fixture
+async def proxy_client(example_config, upstream_mock_handler):
+    mock_transport = httpx.MockTransport(upstream_mock_handler)
+    http_client = httpx.AsyncClient(transport=mock_transport)
+    app = create_app(config_path=example_config, http_client=http_client)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as test_client:
+        yield test_client
+    await http_client.aclose()
+
+
+@pytest.fixture
+async def proxy_client_no_provider(tmp_path):
+    config_path = tmp_path / "aiwall.yaml"
+    config_path.write_text("server:\n  port: 8080\nproviders: []\n")
+    mock_transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"ok": True}))
+    http_client = httpx.AsyncClient(transport=mock_transport)
+    app = create_app(config_path=config_path, http_client=http_client)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as test_client:
+        yield test_client
+    await http_client.aclose()
