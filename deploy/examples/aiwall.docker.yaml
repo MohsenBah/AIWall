@@ -11,8 +11,7 @@ providers:
 
   - name: ollama
     type: ollama
-    # Local dev: Ollama on the same machine. Docker Compose: use http://ollama:11434
-    base_url: http://127.0.0.1:11434
+    base_url: http://localhost:11434
     models: ["llama*", "mistral*", "qwen*"]
 
 policies:
