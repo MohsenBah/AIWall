@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from app import __version__
 from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
+from app.policies.engine import PolicyEngine
 from app.proxy.routes import router as proxy_router
 from app.storage.database import create_engine_from_config, init_db
 
@@ -55,6 +56,7 @@ def create_app(
     app.state.config = config
     app.state.engine = engine
     app.state.audit_writer = audit_writer
+    app.state.policy_engine = PolicyEngine(resolved_path)
     if http_client is not None:
         app.state.http_client = http_client
 

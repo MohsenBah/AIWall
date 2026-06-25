@@ -8,11 +8,14 @@ from collections.abc import AsyncIterator, Mapping
 
 import httpx
 from fastapi import HTTPException, Request, Response
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
 from app.config import AIWallConfig
+from app.policies.context import PolicyContext
+from app.policies.engine import PolicyEngine, PolicyResult
+from app.policies.responses import policy_blocked_response
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
 
@@ -42,18 +45,49 @@ def _filter_forward_headers(headers: Mapping[str, str]) -> dict[str, str]:
     return forwarded
 
 
+def _audit_decision(policy_result: PolicyResult, upstream_ok: bool = True) -> str:
+    if policy_result.action == "warn":
+        return "warn"
+    if not upstream_ok:
+        return "error"
+    return "allow"
+
+
+def _audit_reason(policy_result: PolicyResult, upstream_reason: str | None = None) -> str:
+    if policy_result.action == "warn":
+        return policy_result.reason or "policy_warn"
+    return upstream_reason or "proxied"
+
+
 class ChatCompletionProxy:
     def __init__(
         self,
         config: AIWallConfig,
         http_client: httpx.AsyncClient,
         audit_writer: AuditWriter,
+        policy_engine: PolicyEngine,
     ):
         self._config = config
         self._http_client = http_client
         self._audit_writer = audit_writer
+        self._policy_engine = policy_engine
 
-    async def forward(self, request: Request) -> Response | StreamingResponse:
+    def _evaluate_policy(
+        self,
+        body: bytes,
+        model: str,
+        input_length: int,
+    ) -> PolicyResult:
+        context = PolicyContext(
+            body=body,
+            model=model,
+            input_length=input_length,
+            contains_secret=False,
+            estimated_cost=0.0,
+        )
+        return self._policy_engine.evaluate(context)
+
+    async def forward(self, request: Request) -> Response | StreamingResponse | JSONResponse:
         body = await request.body()
         model = extract_model_from_body(body)
         provider = select_provider(self._config, model)
@@ -63,6 +97,25 @@ class ChatCompletionProxy:
         request_id = new_request_id()
         input_length = measure_input_length(body)
         started = time.perf_counter()
+        policy_result = self._evaluate_policy(body, model, input_length)
+
+        if policy_result.action == "block":
+            latency_ms = (time.perf_counter() - started) * 1000.0
+            log_proxy_event(
+                self._audit_writer,
+                self._config,
+                request_id=request_id,
+                provider_name=provider.name,
+                model=model,
+                decision="block",
+                reason=policy_result.reason,
+                input_length=input_length,
+                output_length=0,
+                latency_ms=latency_ms,
+                body=body,
+                policy_id=policy_result.policy_id,
+            )
+            return policy_blocked_response(policy_result)
 
         if _request_is_streaming(body):
             return await self._forward_stream(
@@ -74,6 +127,7 @@ class ChatCompletionProxy:
                 upstream_url=upstream_url,
                 upstream_headers=upstream_headers,
                 started=started,
+                policy_result=policy_result,
             )
 
         try:
@@ -96,6 +150,7 @@ class ChatCompletionProxy:
                 output_length=0,
                 latency_ms=latency_ms,
                 body=body,
+                policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
             )
             raise HTTPException(
                 status_code=502,
@@ -104,8 +159,12 @@ class ChatCompletionProxy:
 
         latency_ms = (time.perf_counter() - started) * 1000.0
         output_length = len(upstream_response.content)
-        decision = "allow" if upstream_response.status_code < 400 else "error"
-        reason = "proxied" if upstream_response.status_code < 400 else "upstream_error"
+        upstream_ok = upstream_response.status_code < 400
+        decision = _audit_decision(policy_result, upstream_ok=upstream_ok)
+        reason = _audit_reason(
+            policy_result,
+            "proxied" if upstream_ok else "upstream_error",
+        )
 
         log_proxy_event(
             self._audit_writer,
@@ -119,7 +178,8 @@ class ChatCompletionProxy:
             output_length=output_length,
             latency_ms=latency_ms,
             body=body,
-            response_text=upstream_response.text if upstream_response.status_code < 400 else None,
+            response_text=upstream_response.text if upstream_ok else None,
+            policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
         )
 
         return Response(
@@ -139,6 +199,7 @@ class ChatCompletionProxy:
         upstream_url: str,
         upstream_headers: dict[str, str],
         started: float,
+        policy_result: PolicyResult,
     ) -> StreamingResponse | Response:
         upstream_request = self._http_client.build_request(
             "POST",
@@ -209,12 +270,13 @@ class ChatCompletionProxy:
                     request_id=request_id,
                     provider_name=provider_name,
                     model=model,
-                    decision="allow",
-                    reason="proxied",
+                    decision=_audit_decision(policy_result),
+                    reason=_audit_reason(policy_result),
                     input_length=input_length,
                     output_length=output_length,
                     latency_ms=latency_ms,
                     body=body,
+                    policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
                 )
 
         return StreamingResponse(
