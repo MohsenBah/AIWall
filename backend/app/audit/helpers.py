@@ -1,0 +1,105 @@
+"""Helpers for building audit events from proxy traffic."""
+
+from __future__ import annotations
+
+import json
+import time
+import uuid
+from contextlib import contextmanager
+
+from app.audit.writer import AuditEvent, AuditWriter
+from app.config import AIWallConfig
+
+
+def new_request_id() -> str:
+    return str(uuid.uuid4())
+
+
+def measure_input_length(body: bytes) -> int:
+    if not body:
+        return 0
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return len(body)
+
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return len(body)
+
+    total = 0
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if isinstance(content, str):
+            total += len(content)
+        elif isinstance(content, list):
+            for part in content:
+                if isinstance(part, dict) and isinstance(part.get("text"), str):
+                    total += len(part["text"])
+    return total or len(body)
+
+
+def extract_prompt_text(body: bytes) -> str | None:
+    if not body:
+        return None
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return None
+
+    parts: list[str] = []
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if isinstance(content, str):
+            parts.append(content)
+    return "\n".join(parts) if parts else None
+
+
+@contextmanager
+def request_timer():
+    start = time.perf_counter()
+    yield lambda: (time.perf_counter() - start) * 1000.0
+
+
+def log_proxy_event(
+    audit_writer: AuditWriter,
+    config: AIWallConfig,
+    *,
+    request_id: str,
+    provider_name: str,
+    model: str,
+    decision: str,
+    reason: str | None,
+    input_length: int,
+    output_length: int,
+    latency_ms: float,
+    body: bytes | None = None,
+    response_text: str | None = None,
+    policy_id: str | None = None,
+) -> None:
+    raw_prompt = extract_prompt_text(body) if config.logging.log_raw_prompts and body else None
+    raw_response = response_text if config.logging.log_raw_prompts and response_text else None
+
+    audit_writer.write(
+        AuditEvent(
+            request_id=request_id,
+            provider=provider_name,
+            model=model,
+            decision=decision,
+            reason=reason,
+            input_length=input_length,
+            output_length=output_length,
+            latency_ms=latency_ms,
+            policy_id=policy_id,
+            raw_prompt=raw_prompt,
+            raw_response=raw_response,
+        )
+    )
