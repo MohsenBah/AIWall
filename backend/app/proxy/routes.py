@@ -15,5 +15,6 @@ async def chat_completions(request: Request):
         request.app.state.config,
         request.app.state.http_client,
         request.app.state.audit_writer,
+        request.app.state.policy_engine,
     )
     return await proxy.forward(request)

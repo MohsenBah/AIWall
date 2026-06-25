@@ -1,0 +1,63 @@
+import pytest
+
+from app.policies.conditions import evaluate_condition
+from app.policies.context import PolicyContext
+from app.policies.engine import PolicyEngine
+from tests.conftest import write_test_config
+
+
+def test_evaluate_condition_input_length() -> None:
+    context = PolicyContext(body=b"{}", model="gpt-4o-mini", input_length=50)
+    assert evaluate_condition("input.length > 10", context) is True
+    assert evaluate_condition("input.length > 100", context) is False
+
+
+def test_evaluate_condition_contains_secret() -> None:
+    context = PolicyContext(body=b"{}", model="gpt-4o-mini", input_length=1, contains_secret=True)
+    assert evaluate_condition("input.contains_secret", context) is True
+
+
+def test_policy_engine_blocks_matching_policy(tmp_path) -> None:
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: block-long-input
+    when: input.length > 5
+    action: block""",
+    )
+    engine = PolicyEngine(config_path)
+    result = engine.evaluate(
+        PolicyContext(body=b"hello world", model="gpt-4o-mini", input_length=11)
+    )
+    assert result.action == "block"
+    assert result.policy_id == "block-long-input"
+
+
+def test_policy_engine_warns_without_blocking(tmp_path) -> None:
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: warn-long-input
+    when: input.length > 5
+    action: warn""",
+    )
+    engine = PolicyEngine(config_path)
+    result = engine.evaluate(
+        PolicyContext(body=b"hello world", model="gpt-4o-mini", input_length=11)
+    )
+    assert result.action == "warn"
+
+
+def test_policy_engine_hot_reload(tmp_path) -> None:
+    config_path = write_test_config(tmp_path, "")
+    engine = PolicyEngine(config_path)
+    allow_context = PolicyContext(body=b"hi", model="gpt-4o-mini", input_length=2)
+    assert engine.evaluate(allow_context).action == "allow"
+
+    config_path.write_text(
+        write_test_config(
+            tmp_path,
+            """  - name: block-any-input
+    when: input.length > 1
+    action: block""",
+        ).read_text()
+    )
+    assert engine.evaluate(allow_context).action == "block"

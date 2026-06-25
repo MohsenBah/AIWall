@@ -7,10 +7,14 @@ from httpx import ASGITransport, AsyncClient
 from app.main import create_app
 
 
-@pytest.fixture
-def example_config(tmp_path: Path) -> Path:
+def write_test_config(tmp_path: Path, policies_block: str = "") -> Path:
     db_path = tmp_path / "aiwall.db"
     config_path = tmp_path / "aiwall.yaml"
+    block = policies_block.strip("\n")
+    if block.strip():
+        policies_yaml = f"policies:\n{block}"
+    else:
+        policies_yaml = "policies: []"
     config_path.write_text(
         f"""
 server:
@@ -26,16 +30,23 @@ providers:
     type: ollama
     base_url: http://localhost:11434
     models: ["llama*"]
-policies:
-  - name: block-secrets
-    when: input.contains_secret
-    action: block
+{policies_yaml}
 logging:
   store: sqlite:///{db_path.as_posix()}
   log_raw_prompts: false
 """.strip()
     )
     return config_path
+
+
+@pytest.fixture
+def example_config(tmp_path: Path) -> Path:
+    return write_test_config(
+        tmp_path,
+        """  - name: block-secrets
+    when: input.contains_secret
+    action: block""",
+    )
 
 
 @pytest.fixture
@@ -99,8 +110,18 @@ async def proxy_client(proxy_app):
 
 @pytest.fixture
 async def proxy_client_no_provider(tmp_path):
+    db_path = tmp_path / "empty.db"
     config_path = tmp_path / "aiwall.yaml"
-    config_path.write_text("server:\n  port: 8080\nproviders: []\n")
+    config_path.write_text(
+        f"""
+server:
+  port: 8080
+providers: []
+policies: []
+logging:
+  store: sqlite:///{db_path.as_posix()}
+""".strip()
+    )
     mock_transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"ok": True}))
     http_client = httpx.AsyncClient(transport=mock_transport)
     app = create_app(config_path=config_path, http_client=http_client)
