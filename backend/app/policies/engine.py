@@ -41,17 +41,19 @@ class PolicyEngine:
                 continue
 
             if policy.action == "block":
+                reason = "secret-detected" if policy.when.strip() == "input.contains_secret" else policy.when
                 block_match = PolicyResult(
                     action="block",
                     policy_id=policy.name,
-                    reason=policy.when,
+                    reason=reason,
                 )
                 break
             if policy.action == "warn" and warn_match is None:
+                reason = "secret-detected" if policy.when.strip() == "input.contains_secret" else policy.when
                 warn_match = PolicyResult(
                     action="warn",
                     policy_id=policy.name,
-                    reason=policy.when,
+                    reason=reason,
                 )
 
         if block_match is not None:

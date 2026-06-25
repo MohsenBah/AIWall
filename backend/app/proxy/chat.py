@@ -18,6 +18,7 @@ from app.policies.engine import PolicyEngine, PolicyResult
 from app.policies.responses import policy_blocked_response
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
+from app.scanners.secrets import scan_request_body
 
 FORWARD_REQUEST_HEADERS = {
     "authorization",
@@ -78,11 +79,12 @@ class ChatCompletionProxy:
         model: str,
         input_length: int,
     ) -> PolicyResult:
+        scan_result = scan_request_body(body)
         context = PolicyContext(
             body=body,
             model=model,
             input_length=input_length,
-            contains_secret=False,
+            contains_secret=scan_result.contains_secret,
             estimated_cost=0.0,
         )
         return self._policy_engine.evaluate(context)
