@@ -17,7 +17,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Ollama adapter + provider router | Done (Phase 1.3) |
 | Audit logging (SQLite) | Done (Phase 1.4) |
 | Policy engine (allow / warn / block) | Done (Phase 1.5) |
-| Secret scanning | Planned |
+| Secret scanning | Done (Phase 1.6) |
+| Token/cost estimator | Planned |
 | Web control panel (dashboard, policy toggles, logs) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 | Docker Compose deployment | Planned |
