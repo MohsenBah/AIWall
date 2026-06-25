@@ -9,9 +9,10 @@ from app.main import create_app
 
 @pytest.fixture
 def example_config(tmp_path: Path) -> Path:
+    db_path = tmp_path / "aiwall.db"
     config_path = tmp_path / "aiwall.yaml"
     config_path.write_text(
-        """
+        f"""
 server:
   host: 127.0.0.1
   port: 9090
@@ -30,6 +31,7 @@ policies:
     when: input.contains_secret
     action: block
 logging:
+  store: sqlite:///{db_path.as_posix()}
   log_raw_prompts: false
 """.strip()
     )
@@ -80,14 +82,19 @@ def upstream_mock_handler(upstream_requests):
 
 
 @pytest.fixture
-async def proxy_client(example_config, upstream_mock_handler):
+async def proxy_app(example_config, upstream_mock_handler):
     mock_transport = httpx.MockTransport(upstream_mock_handler)
     http_client = httpx.AsyncClient(transport=mock_transport)
     app = create_app(config_path=example_config, http_client=http_client)
-    transport = ASGITransport(app=app)
+    yield app
+    await http_client.aclose()
+
+
+@pytest.fixture
+async def proxy_client(proxy_app):
+    transport = ASGITransport(app=proxy_app)
     async with AsyncClient(transport=transport, base_url="http://test") as test_client:
         yield test_client
-    await http_client.aclose()
 
 
 @pytest.fixture

@@ -10,10 +10,18 @@ import httpx
 from fastapi import FastAPI
 
 from app import __version__
+from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
 from app.proxy.routes import router as proxy_router
+from app.storage.database import create_engine_from_config, init_db
 
 DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0, read=300.0, write=60.0, pool=10.0)
+
+
+def _init_storage(config: AIWallConfig) -> tuple[Any, AuditWriter]:
+    engine = create_engine_from_config(config)
+    init_db(engine)
+    return engine, AuditWriter(engine)
 
 
 def create_app(
@@ -22,16 +30,20 @@ def create_app(
 ) -> FastAPI:
     resolved_path = resolve_config_path(config_path)
     config = load_config(resolved_path)
+    engine, audit_writer = _init_storage(config)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.config = load_config(resolved_path)
-        if http_client is not None:
-            yield
-            return
-        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
-            app.state.http_client = client
-            yield
+        try:
+            if http_client is not None:
+                yield
+            else:
+                async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
+                    app.state.http_client = client
+                    yield
+        finally:
+            engine.dispose()
 
     app = FastAPI(
         title="AIWall",
@@ -41,6 +53,8 @@ def create_app(
     )
     app.state.config_path = resolved_path
     app.state.config = config
+    app.state.engine = engine
+    app.state.audit_writer = audit_writer
     if http_client is not None:
         app.state.http_client = http_client
 

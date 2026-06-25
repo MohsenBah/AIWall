@@ -15,7 +15,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | FastAPI skeleton + `/healthz` + config loader | Done (Phase 1.1) |
 | OpenAI-compatible proxy (`/v1/chat/completions`, SSE streaming) | Done (Phase 1.2) |
 | Ollama adapter + provider router | Done (Phase 1.3) |
-| Audit logging (SQLite) | Planned |
+| Audit logging (SQLite) | Done (Phase 1.4) |
 | Secret scanning | Planned |
 | Policy engine (allow / warn / block) | Planned |
 | Web control panel (dashboard, policy toggles, logs) | Planned |
