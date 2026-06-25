@@ -86,6 +86,7 @@ def upstream_mock_handler(upstream_requests):
                 "id": "chat-1",
                 "object": "chat.completion",
                 "choices": [{"message": {"role": "assistant", "content": "hello"}}],
+                "usage": {"prompt_tokens": 5, "completion_tokens": 2, "total_tokens": 7},
             },
         )
 
