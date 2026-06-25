@@ -151,6 +151,7 @@ activemq-data/
 .env
 .envrc
 aiwall.yaml
+prices.yaml
 data/
 .venv
 env/

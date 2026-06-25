@@ -28,3 +28,6 @@ logging:
   store: sqlite:///data/aiwall.db
   log_raw_prompts: false
   retention_days: 90
+
+pricing:
+  file: prices.yaml
