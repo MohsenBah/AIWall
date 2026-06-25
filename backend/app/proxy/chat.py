@@ -68,11 +68,13 @@ class ChatCompletionProxy:
         http_client: httpx.AsyncClient,
         audit_writer: AuditWriter,
         policy_engine: PolicyEngine,
+        cost_estimator,
     ):
         self._config = config
         self._http_client = http_client
         self._audit_writer = audit_writer
         self._policy_engine = policy_engine
+        self._cost_estimator = cost_estimator
 
     def _evaluate_policy(
         self,
@@ -171,6 +173,9 @@ class ChatCompletionProxy:
         token_usage = (
             extract_token_usage(body, upstream_response.content) if upstream_ok else None
         )
+        cost_estimate = None
+        if token_usage is not None:
+            cost_estimate = self._cost_estimator.estimate(provider.name, model, token_usage)
 
         log_proxy_event(
             self._audit_writer,
@@ -189,6 +194,7 @@ class ChatCompletionProxy:
             prompt_tokens=token_usage.prompt_tokens if token_usage else None,
             completion_tokens=token_usage.completion_tokens if token_usage else None,
             total_tokens=token_usage.total_tokens if token_usage else None,
+            estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
         )
 
         return Response(

@@ -14,6 +14,7 @@ from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
 from app.policies.engine import PolicyEngine
 from app.proxy.routes import router as proxy_router
+from app.proxy.pricing import CostEstimator, resolve_prices_path
 from app.storage.database import create_engine_from_config, init_db
 
 DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0, read=300.0, write=60.0, pool=10.0)
@@ -32,6 +33,8 @@ def create_app(
     resolved_path = resolve_config_path(config_path)
     config = load_config(resolved_path)
     engine, audit_writer = _init_storage(config)
+    prices_path = resolve_prices_path(resolved_path, config.pricing.file)
+    cost_estimator = CostEstimator(prices_path)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -57,6 +60,7 @@ def create_app(
     app.state.engine = engine
     app.state.audit_writer = audit_writer
     app.state.policy_engine = PolicyEngine(resolved_path)
+    app.state.cost_estimator = cost_estimator
     if http_client is not None:
         app.state.http_client = http_client
 

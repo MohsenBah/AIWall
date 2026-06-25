@@ -32,6 +32,7 @@ async def test_chat_completions_writes_audit_row(
     assert row.prompt_tokens == 5
     assert row.completion_tokens == 2
     assert row.total_tokens == 7
+    assert row.estimated_cost == 0.00000195
 
 
 @pytest.mark.asyncio

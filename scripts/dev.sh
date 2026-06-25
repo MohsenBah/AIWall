@@ -10,6 +10,9 @@ if [[ ! -f "$AIWALL_CONFIG" ]]; then
   echo "Using example config: $AIWALL_CONFIG"
   echo "Copy to aiwall.yaml to customize (cp aiwall.yaml.example aiwall.yaml)"
 fi
+if [[ ! -f "${ROOT}/prices.yaml" && -f "${ROOT}/prices.yaml.example" ]]; then
+  echo "Tip: copy prices.yaml.example to prices.yaml for cost estimation"
+fi
 export AIWALL_CONFIG
 export PYTHONPATH="${ROOT}/backend${PYTHONPATH:+:$PYTHONPATH}"
 

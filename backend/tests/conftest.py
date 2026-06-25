@@ -7,6 +7,20 @@ from httpx import ASGITransport, AsyncClient
 from app.main import create_app
 
 
+def write_test_prices(config_path: Path) -> Path:
+    prices_path = config_path.parent / "prices.yaml"
+    prices_path.write_text(
+        """
+models:
+  openai:
+    gpt-4o-mini:
+      input_per_million: 0.15
+      output_per_million: 0.60
+""".strip()
+    )
+    return prices_path
+
+
 def write_test_config(tmp_path: Path, policies_block: str = "") -> Path:
     db_path = tmp_path / "aiwall.db"
     config_path = tmp_path / "aiwall.yaml"
@@ -36,6 +50,7 @@ logging:
   log_raw_prompts: false
 """.strip()
     )
+    write_test_prices(config_path)
     return config_path
 
 
