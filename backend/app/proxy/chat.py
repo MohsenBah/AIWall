@@ -18,6 +18,7 @@ from app.policies.engine import PolicyEngine, PolicyResult
 from app.policies.responses import policy_blocked_response
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
+from app.proxy.tokens import extract_token_usage
 from app.scanners.secrets import scan_request_body
 
 FORWARD_REQUEST_HEADERS = {
@@ -167,6 +168,9 @@ class ChatCompletionProxy:
             policy_result,
             "proxied" if upstream_ok else "upstream_error",
         )
+        token_usage = (
+            extract_token_usage(body, upstream_response.content) if upstream_ok else None
+        )
 
         log_proxy_event(
             self._audit_writer,
@@ -182,6 +186,9 @@ class ChatCompletionProxy:
             body=body,
             response_text=upstream_response.text if upstream_ok else None,
             policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
+            prompt_tokens=token_usage.prompt_tokens if token_usage else None,
+            completion_tokens=token_usage.completion_tokens if token_usage else None,
+            total_tokens=token_usage.total_tokens if token_usage else None,
         )
 
         return Response(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -43,6 +43,21 @@ def create_engine_from_config(config: AIWallConfig) -> Engine:
 
 def init_db(engine: Engine) -> None:
     Base.metadata.create_all(engine)
+    _migrate_audit_schema(engine)
+
+
+def _migrate_audit_schema(engine: Engine) -> None:
+    columns = {
+        "prompt_tokens": "INTEGER",
+        "completion_tokens": "INTEGER",
+        "total_tokens": "INTEGER",
+    }
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.execute(text("PRAGMA table_info(audit_events)"))}
+        for name, col_type in columns.items():
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE audit_events ADD COLUMN {name} {col_type}"))
+        conn.commit()
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:

@@ -18,7 +18,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Audit logging (SQLite) | Done (Phase 1.4) |
 | Policy engine (allow / warn / block) | Done (Phase 1.5) |
 | Secret scanning | Done (Phase 1.6) |
-| Token/cost estimator | Planned |
+| Token counting (non-streaming) | Done (Phase 1.7a) |
+| Cost estimation | Planned (Phase 1.7b) |
 | Web control panel (dashboard, policy toggles, logs) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 | Docker Compose deployment | Planned |

@@ -24,6 +24,9 @@ class AuditEvent:
     user_id: str | None = None
     app_id: str | None = None
     estimated_cost: float | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    total_tokens: int | None = None
     policy_id: str | None = None
     raw_prompt: str | None = None
     raw_response: str | None = None
@@ -48,6 +51,9 @@ class AuditWriter:
             input_length=event.input_length,
             output_length=event.output_length,
             estimated_cost=event.estimated_cost,
+            prompt_tokens=event.prompt_tokens,
+            completion_tokens=event.completion_tokens,
+            total_tokens=event.total_tokens,
             policy_id=event.policy_id,
             latency_ms=event.latency_ms,
             raw_prompt=event.raw_prompt,

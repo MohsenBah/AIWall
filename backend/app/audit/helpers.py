@@ -84,6 +84,9 @@ def log_proxy_event(
     body: bytes | None = None,
     response_text: str | None = None,
     policy_id: str | None = None,
+    prompt_tokens: int | None = None,
+    completion_tokens: int | None = None,
+    total_tokens: int | None = None,
 ) -> None:
     raw_prompt = extract_prompt_text(body) if config.logging.log_raw_prompts and body else None
     raw_response = response_text if config.logging.log_raw_prompts and response_text else None
@@ -99,6 +102,9 @@ def log_proxy_event(
             output_length=output_length,
             latency_ms=latency_ms,
             policy_id=policy_id,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
             raw_prompt=raw_prompt,
             raw_response=raw_response,
         )
