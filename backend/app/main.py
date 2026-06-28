@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -77,7 +78,17 @@ def create_app(
         }
 
     app.include_router(proxy_router)
+    _register_web(app)
     return app
+
+
+def _register_web(app: FastAPI) -> None:
+    """Mount the Jinja2 control panel if Jinja2 is installed."""
+    if importlib.util.find_spec("jinja2") is None:
+        return
+    from app.web.routes import register_web
+
+    register_web(app)
 
 
 app = create_app()

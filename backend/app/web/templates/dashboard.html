@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Dashboard{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h1>Recent events</h1>
+    <p class="muted">Showing the latest {{ event_limit }} requests proxied through AIWall.</p>
+
+    {% if events %}
+    <table class="events">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Provider</th>
+                <th>Model</th>
+                <th>Decision</th>
+                <th>Reason</th>
+                <th class="num">Tokens</th>
+                <th class="num">Cost</th>
+                <th class="num">Latency</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for event in events %}
+            <tr>
+                <td class="mono">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else '-' }}</td>
+                <td>{{ event.provider }}</td>
+                <td class="mono">{{ event.model }}</td>
+                <td><span class="badge badge-{{ event.decision }}">{{ event.decision }}</span></td>
+                <td class="muted">{{ event.reason or '-' }}</td>
+                <td class="num">{{ event.total_tokens if event.total_tokens is not none else '-' }}</td>
+                <td class="num">{{ '$%.6f'|format(event.estimated_cost) if event.estimated_cost is not none else '-' }}</td>
+                <td class="num">{{ '%.0f ms'|format(event.latency_ms) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No events yet. Send a request through the proxy to see it here.</p>
+    {% endif %}
+</section>
+{% endblock %}
