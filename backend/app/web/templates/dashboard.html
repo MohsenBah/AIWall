@@ -3,6 +3,32 @@
 {% block title %}AIWall - Dashboard{% endblock %}
 
 {% block content %}
+<section class="panel summary">
+    <h1>Last {{ summary.window_hours }}h</h1>
+    <div class="cards">
+        <div class="card">
+            <span class="card-label">Requests</span>
+            <span class="card-value">{{ summary.total }}</span>
+        </div>
+        <div class="card card-allow">
+            <span class="card-label">Allowed</span>
+            <span class="card-value">{{ summary.allow }}</span>
+        </div>
+        <div class="card card-warn">
+            <span class="card-label">Warned</span>
+            <span class="card-value">{{ summary.warn }}</span>
+        </div>
+        <div class="card card-block">
+            <span class="card-label">Blocked</span>
+            <span class="card-value">{{ summary.block }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Est. cost</span>
+            <span class="card-value">${{ '%.6f'|format(summary.total_estimated_cost) }}</span>
+        </div>
+    </div>
+</section>
+
 <section class="panel">
     <h1>Recent events</h1>
     <p class="muted">Showing the latest {{ event_limit }} requests proxied through AIWall.</p>

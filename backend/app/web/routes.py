@@ -14,6 +14,7 @@ TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
 
 DEFAULT_EVENT_LIMIT = 50
+DEFAULT_SUMMARY_WINDOW_HOURS = 24
 
 
 def build_templates() -> Jinja2Templates:
@@ -27,10 +28,15 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
     async def dashboard(request: Request) -> HTMLResponse:
         audit_writer = request.app.state.audit_writer
         events = audit_writer.list_recent(limit=DEFAULT_EVENT_LIMIT)
+        summary = audit_writer.summary(window_hours=DEFAULT_SUMMARY_WINDOW_HOURS)
         return templates.TemplateResponse(
             request,
             "dashboard.html",
-            {"events": events, "event_limit": DEFAULT_EVENT_LIMIT},
+            {
+                "events": events,
+                "event_limit": DEFAULT_EVENT_LIMIT,
+                "summary": summary,
+            },
         )
 
     return router
