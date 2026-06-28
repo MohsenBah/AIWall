@@ -54,5 +54,8 @@ async def test_streaming_chat_completions_writes_audit_row(
     rows = audit_writer.list_recent(limit=1)
     assert len(rows) == 1
     assert rows[0].decision == "allow"
-    assert rows[0].prompt_tokens is None
     assert rows[0].output_length > 0
+    # streaming now accounts tokens from SSE delta content (1.7c)
+    assert rows[0].prompt_tokens is not None
+    assert rows[0].completion_tokens is not None
+    assert rows[0].total_tokens == rows[0].prompt_tokens + rows[0].completion_tokens
