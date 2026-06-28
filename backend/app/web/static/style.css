@@ -60,6 +60,38 @@ h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
 
 .muted { color: var(--muted); }
 
+.summary { margin-bottom: 1.25rem; }
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.9rem 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.card-label {
+    color: var(--muted);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.card-value { font-size: 1.5rem; font-weight: 700; }
+
+.card-allow .card-value { color: var(--allow); }
+.card-warn .card-value { color: var(--warn); }
+.card-block .card-value { color: var(--block); }
+
 table.events {
     width: 100%;
     border-collapse: collapse;

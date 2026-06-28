@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.engine import Engine
 
@@ -31,6 +31,30 @@ class AuditEvent:
     raw_prompt: str | None = None
     raw_response: str | None = None
     timestamp: datetime | None = None
+
+
+@dataclass(frozen=True)
+class AuditSummary:
+    window_hours: int
+    total: int = 0
+    decision_counts: dict[str, int] = field(default_factory=dict)
+    total_estimated_cost: float = 0.0
+
+    @property
+    def allow(self) -> int:
+        return self.decision_counts.get("allow", 0)
+
+    @property
+    def warn(self) -> int:
+        return self.decision_counts.get("warn", 0)
+
+    @property
+    def block(self) -> int:
+        return self.decision_counts.get("block", 0)
+
+    @property
+    def error(self) -> int:
+        return self.decision_counts.get("error", 0)
 
 
 class AuditWriter:
@@ -71,3 +95,27 @@ class AuditWriter:
         with self._session_factory() as session:
             stmt = select(AuditEventRow).order_by(AuditEventRow.id.desc()).limit(limit)
             return list(session.scalars(stmt).all())
+
+    def summary(self, window_hours: int = 24) -> AuditSummary:
+        from sqlalchemy import func, select
+
+        since = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+        with self._session_factory() as session:
+            count_stmt = (
+                select(AuditEventRow.decision, func.count())
+                .where(AuditEventRow.timestamp >= since)
+                .group_by(AuditEventRow.decision)
+            )
+            decision_counts = {decision: count for decision, count in session.execute(count_stmt)}
+
+            cost_stmt = select(func.coalesce(func.sum(AuditEventRow.estimated_cost), 0.0)).where(
+                AuditEventRow.timestamp >= since
+            )
+            total_cost = session.execute(cost_stmt).scalar_one()
+
+        return AuditSummary(
+            window_hours=window_hours,
+            total=sum(decision_counts.values()),
+            decision_counts=decision_counts,
+            total_estimated_cost=float(total_cost or 0.0),
+        )

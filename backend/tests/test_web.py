@@ -55,4 +55,8 @@ async def test_dashboard_lists_recent_events(tmp_path, upstream_mock_handler) ->
     assert response.status_code == 200
     assert "gpt-4o-mini" in response.text
     assert "badge-allow" in response.text
+    # summary panel (1.8b)
+    assert "Requests" in response.text
+    assert "Allowed" in response.text
+    assert "Est. cost" in response.text
     await http_client.aclose()
