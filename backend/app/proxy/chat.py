@@ -18,7 +18,11 @@ from app.policies.engine import PolicyEngine, PolicyResult
 from app.policies.responses import policy_blocked_response
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
-from app.proxy.tokens import extract_token_usage
+from app.proxy.tokens import (
+    estimate_request_token_usage,
+    extract_stream_token_usage,
+    extract_token_usage,
+)
 from app.scanners.secrets import scan_request_body
 
 FORWARD_REQUEST_HEADERS = {
@@ -79,16 +83,19 @@ class ChatCompletionProxy:
     def _evaluate_policy(
         self,
         body: bytes,
+        provider_name: str,
         model: str,
         input_length: int,
     ) -> PolicyResult:
         scan_result = scan_request_body(body)
+        projected_usage = estimate_request_token_usage(body)
+        cost_estimate = self._cost_estimator.estimate(provider_name, model, projected_usage)
         context = PolicyContext(
             body=body,
             model=model,
             input_length=input_length,
             contains_secret=scan_result.contains_secret,
-            estimated_cost=0.0,
+            estimated_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
         )
         return self._policy_engine.evaluate(context)
 
@@ -102,7 +109,7 @@ class ChatCompletionProxy:
         request_id = new_request_id()
         input_length = measure_input_length(body)
         started = time.perf_counter()
-        policy_result = self._evaluate_policy(body, model, input_length)
+        policy_result = self._evaluate_policy(body, provider.name, model, input_length)
 
         if policy_result.action == "block":
             latency_ms = (time.perf_counter() - started) * 1000.0
@@ -278,7 +285,12 @@ class ChatCompletionProxy:
             finally:
                 await upstream_response.aclose()
                 latency_ms = (time.perf_counter() - started) * 1000.0
-                output_length = sum(len(chunk) for chunk in output_chunks)
+                output_bytes = b"".join(output_chunks)
+                output_length = len(output_bytes)
+                token_usage = extract_stream_token_usage(
+                    body, output_bytes.decode("utf-8", errors="replace")
+                )
+                cost_estimate = self._cost_estimator.estimate(provider_name, model, token_usage)
                 log_proxy_event(
                     self._audit_writer,
                     self._config,
@@ -291,7 +303,12 @@ class ChatCompletionProxy:
                     output_length=output_length,
                     latency_ms=latency_ms,
                     body=body,
+                    response_text=output_bytes.decode("utf-8", errors="replace"),
                     policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
+                    prompt_tokens=token_usage.prompt_tokens,
+                    completion_tokens=token_usage.completion_tokens,
+                    total_tokens=token_usage.total_tokens,
+                    estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
                 )
 
         return StreamingResponse(
