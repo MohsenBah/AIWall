@@ -23,7 +23,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Cost-aware policies + streaming tokens | Done (Phase 1.7c) |
 | Web dashboard (recent events log) | Done (Phase 1.8a) |
 | Dashboard summary panel (counts + cost) | Done (Phase 1.8b) |
-| Web control panel (live refresh, filters, policy toggles) | In progress |
+| Dashboard live refresh + event filters | Done (Phase 1.8c) |
+| Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 | Docker Compose deployment | Planned |
 

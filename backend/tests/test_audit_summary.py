@@ -57,3 +57,30 @@ def test_summary_excludes_events_outside_window(tmp_path) -> None:
     assert summary.total == 1
     assert summary.allow == 1
     assert abs(summary.total_estimated_cost - 0.005) < 1e-9
+
+
+def test_list_recent_filters_by_decision_and_provider(tmp_path) -> None:
+    writer = _make_writer(tmp_path)
+    now = datetime.now(timezone.utc)
+
+    writer.write(_event("allow", 0.001, now))
+    writer.write(_event("allow", 0.002, now))
+    writer.write(
+        AuditEvent(
+            request_id="req-warn",
+            provider="ollama",
+            model="llama3.2:1b",
+            decision="warn",
+            reason="test",
+            input_length=10,
+            output_length=20,
+            latency_ms=5.0,
+            timestamp=now,
+        )
+    )
+
+    assert len(writer.list_recent(decision="allow")) == 2
+    assert len(writer.list_recent(decision="warn")) == 1
+    assert len(writer.list_recent(provider="ollama")) == 1
+    assert len(writer.list_recent(decision="allow", provider="openai")) == 2
+    assert writer.list_providers() == ["ollama", "openai"]

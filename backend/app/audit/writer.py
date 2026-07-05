@@ -89,11 +89,28 @@ class AuditWriter:
             session.refresh(row)
             return row
 
-    def list_recent(self, limit: int = 100) -> list[AuditEventRow]:
+    def list_recent(
+        self,
+        limit: int = 100,
+        *,
+        decision: str | None = None,
+        provider: str | None = None,
+    ) -> list[AuditEventRow]:
         from sqlalchemy import select
 
         with self._session_factory() as session:
             stmt = select(AuditEventRow).order_by(AuditEventRow.id.desc()).limit(limit)
+            if decision:
+                stmt = stmt.where(AuditEventRow.decision == decision)
+            if provider:
+                stmt = stmt.where(AuditEventRow.provider == provider)
+            return list(session.scalars(stmt).all())
+
+    def list_providers(self) -> list[str]:
+        from sqlalchemy import select
+
+        with self._session_factory() as session:
+            stmt = select(AuditEventRow.provider).distinct().order_by(AuditEventRow.provider)
             return list(session.scalars(stmt).all())
 
     def summary(self, window_hours: int = 24) -> AuditSummary:
