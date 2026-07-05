@@ -11,7 +11,7 @@ providers:
 
   - name: ollama
     type: ollama
-    base_url: http://localhost:11434
+    base_url: http://ollama:11434
     models: ["llama*", "mistral*", "qwen*"]
 
 policies:
