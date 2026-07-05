@@ -22,12 +22,14 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY deploy/examples/aiwall.docker.yaml ./aiwall.yaml
 COPY prices.yaml.example ./prices.yaml.example
+COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 
 RUN mkdir -p /app/data \
+    && chmod +x /docker-entrypoint.sh \
     && chown -R aiwall:aiwall /app
 
 USER aiwall
 
 EXPOSE 8080
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

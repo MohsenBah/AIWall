@@ -1,0 +1,26 @@
+.git
+.gitignore
+.venv
+venv
+env
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.py[cod]
+**/.coverage
+htmlcov/
+.mypy_cache
+
+# Local runtime data (mounted via compose volumes)
+data/
+*.db
+aiwall.yaml
+prices.yaml
+.env
+.env.*
+
+# Editor / OS noise
+.idea
+.vscode
+*.swp
+.DS_Store
