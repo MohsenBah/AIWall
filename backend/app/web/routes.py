@@ -24,10 +24,34 @@ def build_templates() -> Jinja2Templates:
 def create_web_router(templates: Jinja2Templates) -> APIRouter:
     router = APIRouter()
 
+    def _load_events(
+        audit_writer,
+        *,
+        decision: str | None,
+        provider: str | None,
+    ):
+        normalized_decision = decision or None
+        normalized_provider = provider or None
+        events = audit_writer.list_recent(
+            limit=DEFAULT_EVENT_LIMIT,
+            decision=normalized_decision,
+            provider=normalized_provider,
+        )
+        providers = audit_writer.list_providers()
+        return events, providers, normalized_decision, normalized_provider
+
     @router.get("/", response_class=HTMLResponse)
-    async def dashboard(request: Request) -> HTMLResponse:
+    async def dashboard(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+    ) -> HTMLResponse:
         audit_writer = request.app.state.audit_writer
-        events = audit_writer.list_recent(limit=DEFAULT_EVENT_LIMIT)
+        events, providers, selected_decision, selected_provider = _load_events(
+            audit_writer,
+            decision=decision,
+            provider=provider,
+        )
         summary = audit_writer.summary(window_hours=DEFAULT_SUMMARY_WINDOW_HOURS)
         return templates.TemplateResponse(
             request,
@@ -36,6 +60,32 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 "events": events,
                 "event_limit": DEFAULT_EVENT_LIMIT,
                 "summary": summary,
+                "providers": providers,
+                "selected_decision": selected_decision,
+                "selected_provider": selected_provider,
+            },
+        )
+
+    @router.get("/partials/events", response_class=HTMLResponse)
+    async def events_partial(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+    ) -> HTMLResponse:
+        audit_writer = request.app.state.audit_writer
+        events, providers, selected_decision, selected_provider = _load_events(
+            audit_writer,
+            decision=decision,
+            provider=provider,
+        )
+        return templates.TemplateResponse(
+            request,
+            "partials/events_table.html",
+            {
+                "events": events,
+                "providers": providers,
+                "selected_decision": selected_decision,
+                "selected_provider": selected_provider,
             },
         )
 

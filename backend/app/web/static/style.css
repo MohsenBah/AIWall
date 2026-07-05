@@ -92,6 +92,44 @@ h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
 .card-warn .card-value { color: var(--warn); }
 .card-block .card-value { color: var(--block); }
 
+.panel-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+}
+
+.filters select {
+    min-width: 120px;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.9rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
 table.events {
     width: 100%;
     border-collapse: collapse;
