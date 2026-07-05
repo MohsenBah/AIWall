@@ -25,7 +25,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Dashboard summary panel (counts + cost) | Done (Phase 1.8b) |
 | Dashboard live refresh + event filters | Done (Phase 1.8c) |
 | Docker image (slim, non-root, uvicorn) | Done (Phase 1.9a) |
-| Docker Compose deployment | Planned (Phase 1.9b) |
+| Docker Compose (AIWall + optional Ollama) | Done (Phase 1.9b) |
+| Docker polish (.dockerignore, healthcheck) | Planned (Phase 1.9c) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -67,9 +68,21 @@ Community edition is designed to be genuinely useful on its own. Pro and Enterpr
 
 ## Quick Start
 
-Not yet available. The first milestone is a Docker Compose deployment that proxies requests, blocks secret leaks, and shows events on the local control panel. Proxmox LXC/VM deployment guide will follow.
+### Docker Compose (recommended)
 
-### Development (Phase 1.1)
+```bash
+# AIWall proxy + dashboard
+docker compose -f deploy/docker-compose.yml up --build
+
+# With local Ollama
+docker compose -f deploy/docker-compose.yml --profile ollama up --build
+```
+
+Open `http://127.0.0.1:8080/` for the dashboard. Proxy endpoint: `http://127.0.0.1:8080/v1/chat/completions`.
+
+Set `OPENAI_API_KEY` in your environment for OpenAI provider routing. Edit `deploy/examples/aiwall.docker.yaml` (or mount your own `aiwall.yaml`) for providers and policies. SQLite audit data persists in the `aiwall_data` volume.
+
+### Development
 
 ```bash
 python3 -m venv .venv
