@@ -26,7 +26,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Dashboard live refresh + event filters | Done (Phase 1.8c) |
 | Docker image (slim, non-root, uvicorn) | Done (Phase 1.9a) |
 | Docker Compose (AIWall + optional Ollama) | Done (Phase 1.9b) |
-| Docker polish (.dockerignore, healthcheck) | Planned (Phase 1.9c) |
+| Docker polish (.dockerignore, healthcheck) | Done (Phase 1.9c) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -81,6 +81,17 @@ docker compose -f deploy/docker-compose.yml --profile ollama up --build
 Open `http://127.0.0.1:8080/` for the dashboard. Proxy endpoint: `http://127.0.0.1:8080/v1/chat/completions`.
 
 Set `OPENAI_API_KEY` in your environment for OpenAI provider routing. Edit `deploy/examples/aiwall.docker.yaml` (or mount your own `aiwall.yaml`) for providers and policies. SQLite audit data persists in the `aiwall_data` volume.
+
+Copy `deploy/.env.example` to `.env` to customize ports and secrets.
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `AIWALL_CONFIG` | `aiwall.yaml` (local) / `/app/aiwall.yaml` (Docker) | Path to the AIWall YAML config file |
+| `AIWALL_PORT` | `8080` | HTTP port for the proxy and dashboard |
+| `OPENAI_API_KEY` | _(unset)_ | API key forwarded to the OpenAI-compatible provider |
+| `OLLAMA_PORT` | `11434` | Host port when running Ollama via `--profile ollama` |
 
 ### Development
 

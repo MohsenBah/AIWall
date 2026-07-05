@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+
+exec uvicorn app.main:app --host 0.0.0.0 --port "${AIWALL_PORT:-8080}"
