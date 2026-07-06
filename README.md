@@ -8,7 +8,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 
 ## Status
 
-**Early development.** This repository is being built toward the AIWall Community MVP: an OpenAI-compatible proxy with secret scanning, policy enforcement, and a local web control panel.
+**Community MVP (Phase 1) is feature-complete for proxy, policies, audit logging, dashboard, and Docker deployment.** Remaining work: policy toggles in the GUI, alerting, and additional docs.
 
 | Component | Status |
 |---|---|
@@ -18,16 +18,11 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Audit logging (SQLite) | Done (Phase 1.4) |
 | Policy engine (allow / warn / block) | Done (Phase 1.5) |
 | Secret scanning | Done (Phase 1.6) |
-| Token counting (non-streaming) | Done (Phase 1.7a) |
-| Cost estimation (`prices.yaml`) | Done (Phase 1.7b) |
-| Cost-aware policies + streaming tokens | Done (Phase 1.7c) |
-| Web dashboard (recent events log) | Done (Phase 1.8a) |
-| Dashboard summary panel (counts + cost) | Done (Phase 1.8b) |
-| Dashboard live refresh + event filters | Done (Phase 1.8c) |
-| Docker image (slim, non-root, uvicorn) | Done (Phase 1.9a) |
-| Docker Compose (AIWall + optional Ollama) | Done (Phase 1.9b) |
-| Docker polish (.dockerignore, healthcheck) | Done (Phase 1.9c) |
-| Demo script (`scripts/demo.sh`) | Done (Phase 1.10a) |
+| Token counting + cost estimation | Done (Phase 1.7) |
+| Web dashboard (events, summary, HTMX filters) | Done (Phase 1.8) |
+| Docker image + Compose + healthcheck | Done (Phase 1.9) |
+| Demo script + README quickstart | Done (Phase 1.10b) |
+| Architecture + configuration docs | Planned (Phase 1.10c) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -67,23 +62,83 @@ Community edition is designed to be genuinely useful on its own. Pro and Enterpr
 | [AIWall-detections](https://github.com/MohsenBah/AIWall-detections) | Wazuh rules, Sigma rules, Grafana dashboards, SIEM content |
 | [AIWall-redteam](https://github.com/MohsenBah/AIWall-redteam) | Adversarial testing payloads and mitigation validation |
 
-## Quick Start
+## Quick Start (~15 minutes)
 
-### Docker Compose (recommended)
+Get AIWall running, proxy a request, trigger a secret block, and see it on the dashboard.
+
+### 1. Start AIWall (Docker — recommended)
 
 ```bash
-# AIWall proxy + dashboard
-docker compose -f deploy/docker-compose.yml up --build
-
-# With local Ollama
-docker compose -f deploy/docker-compose.yml --profile ollama up --build
+git clone https://github.com/MohsenBah/AIWall.git
+cd AIWall
+docker compose -f deploy/docker-compose.yml up --build -d
+curl http://127.0.0.1:8080/healthz
 ```
 
-Open `http://127.0.0.1:8080/` for the dashboard. Proxy endpoint: `http://127.0.0.1:8080/v1/chat/completions`.
+Optional: add local Ollama for `llama*` models:
 
-Set `OPENAI_API_KEY` in your environment for OpenAI provider routing. Edit `deploy/examples/aiwall.docker.yaml` (or mount your own `aiwall.yaml`) for providers and policies. SQLite audit data persists in the `aiwall_data` volume.
+```bash
+docker compose -f deploy/docker-compose.yml --profile ollama up --build -d
+```
 
-Copy `deploy/.env.example` to `.env` to customize ports and secrets.
+Copy `deploy/.env.example` to `.env` to set `OPENAI_API_KEY`, `AIWALL_PORT`, or other secrets.
+
+### 2. Run the demo
+
+```bash
+./scripts/demo.sh
+```
+
+This sends one normal request and one secret-leak request, then prints recent audit rows. The secret request should return **HTTP 403** with `policy_blocked`.
+
+For a successful **allow** row, set `OPENAI_API_KEY` or run with the Ollama profile.
+
+### 3. Open the dashboard
+
+Visit [http://127.0.0.1:8080/](http://127.0.0.1:8080/) — summary cards (requests, allow/warn/block counts, estimated cost) and a filterable event log.
+
+![AIWall dashboard](docs/screenshots/dashboard.svg)
+
+You should see at least one **block** row with reason `secret-detected` after running the demo.
+
+### 4. Point a client at AIWall
+
+Use AIWall as your OpenAI-compatible base URL:
+
+```text
+http://127.0.0.1:8080/v1
+```
+
+Example with curl:
+
+```bash
+curl http://127.0.0.1:8080/v1/chat/completions \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hello"}]}'
+```
+
+Coding tools (Cursor, Continue.dev, etc.): set the OpenAI base URL to `http://127.0.0.1:8080/v1` instead of `https://api.openai.com/v1`.
+
+### Local development (without Docker)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp aiwall.yaml.example aiwall.yaml   # optional: customize providers/policies
+cp prices.yaml.example prices.yaml   # optional: cost estimation
+./scripts/dev.sh
+```
+
+In another terminal:
+
+```bash
+curl http://127.0.0.1:8080/healthz
+./scripts/demo.sh
+```
+
+SQLite audit data is stored at `data/aiwall.db` by default.
 
 ### Environment variables
 
@@ -94,35 +149,21 @@ Copy `deploy/.env.example` to `.env` to customize ports and secrets.
 | `OPENAI_API_KEY` | _(unset)_ | API key forwarded to the OpenAI-compatible provider |
 | `OLLAMA_PORT` | `11434` | Host port when running Ollama via `--profile ollama` |
 
-### Development
+Edit `deploy/examples/aiwall.docker.yaml` (Docker) or `aiwall.yaml` (local) for providers and policies. Docker persists audit data in the `aiwall_data` volume.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-./scripts/dev.sh
-curl http://127.0.0.1:8080/healthz
-```
-
-Copy `aiwall.yaml.example` to `aiwall.yaml` to customize providers and policies.
-
-Run `./scripts/demo.sh` against a running instance to send one normal request, one secret-leak block, and print recent audit rows.
-
-Follow this repo for updates.
-
-## Architecture (Planned)
+## Architecture
 
 ```text
 AI Application (script, coding tool, Open WebUI, ...)
     |
     v
-AIWall Proxy
+AIWall Proxy  (/v1/chat/completions, /healthz, dashboard at /)
     |
     +-- Policy Engine
     +-- Secret Scanner
     +-- Cost Estimator
     +-- Provider Router
-    +-- Audit Logger ----> Web Control Panel + Alerts (Telegram/webhook)
+    +-- Audit Logger ----> Web Control Panel + Alerts (planned)
     |
     v
 AI Provider (OpenAI-compatible, Ollama, ...)
@@ -130,7 +171,7 @@ AI Provider (OpenAI-compatible, Ollama, ...)
 
 **Stack:** Python 3.12, FastAPI, SQLite, Jinja2 + HTMX control panel, Docker.
 
-## Configuration (Planned)
+## Configuration
 
 Clients point their base URL to AIWall:
 
@@ -138,7 +179,7 @@ Clients point their base URL to AIWall:
 http://aiwall-host:8080/v1
 ```
 
-Policies and providers are configured in `aiwall.yaml` and can be toggled from the web control panel.
+Policies and providers are configured in `aiwall.yaml`. See `aiwall.yaml.example` for the schema. Full configuration reference: `docs/configuration.md` (Phase 1.10c).
 
 ## Contributing
 

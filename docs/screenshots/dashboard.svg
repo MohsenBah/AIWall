@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="AIWall dashboard preview">
+  <rect width="960" height="540" fill="#0f1117"/>
+  <rect x="0" y="0" width="960" height="52" fill="#181b24" stroke="#262b38"/>
+  <text x="24" y="33" fill="#4f8cff" font-family="system-ui,sans-serif" font-size="18" font-weight="700">AIWall</text>
+  <text x="120" y="33" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="14">Dashboard</text>
+
+  <rect x="24" y="72" width="912" height="120" rx="10" fill="#181b24" stroke="#262b38"/>
+  <text x="40" y="98" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Last 24h</text>
+  <rect x="40" y="112" width="120" height="64" rx="8" fill="#0f1117" stroke="#262b38"/>
+  <text x="52" y="132" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">REQUESTS</text>
+  <text x="52" y="160" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="24" font-weight="700">2</text>
+  <rect x="176" y="112" width="120" height="64" rx="8" fill="#0f1117" stroke="#262b38"/>
+  <text x="188" y="132" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">ALLOWED</text>
+  <text x="188" y="160" fill="#2ea043" font-family="system-ui,sans-serif" font-size="24" font-weight="700">1</text>
+  <rect x="312" y="112" width="120" height="64" rx="8" fill="#0f1117" stroke="#262b38"/>
+  <text x="324" y="132" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">BLOCKED</text>
+  <text x="324" y="160" fill="#f85149" font-family="system-ui,sans-serif" font-size="24" font-weight="700">1</text>
+  <rect x="448" y="112" width="160" height="64" rx="8" fill="#0f1117" stroke="#262b38"/>
+  <text x="460" y="132" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">EST. COST</text>
+  <text x="460" y="160" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="24" font-weight="700">$0.000002</text>
+
+  <rect x="24" y="212" width="912" height="300" rx="10" fill="#181b24" stroke="#262b38"/>
+  <text x="40" y="242" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Recent events</text>
+  <text x="40" y="262" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="12">Decision: All  Provider: All</text>
+
+  <text x="40" y="292" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">TIME</text>
+  <text x="170" y="292" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">PROVIDER</text>
+  <text x="260" y="292" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">MODEL</text>
+  <text x="390" y="292" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">DECISION</text>
+  <text x="500" y="292" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="10">REASON</text>
+  <line x1="40" y1="300" x2="920" y2="300" stroke="#262b38"/>
+
+  <text x="40" y="328" fill="#e6e8ee" font-family="ui-monospace,monospace" font-size="11">2026-07-05 20:12:01</text>
+  <text x="170" y="328" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="12">openai</text>
+  <text x="260" y="328" fill="#e6e8ee" font-family="ui-monospace,monospace" font-size="11">gpt-4o-mini</text>
+  <rect x="390" y="312" width="52" height="20" rx="10" fill="rgba(248,81,73,0.15)"/>
+  <text x="402" y="326" fill="#f85149" font-family="system-ui,sans-serif" font-size="11" font-weight="600">block</text>
+  <text x="500" y="328" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="12">secret-detected</text>
+
+  <text x="40" y="358" fill="#e6e8ee" font-family="ui-monospace,monospace" font-size="11">2026-07-05 20:11:58</text>
+  <text x="170" y="358" fill="#e6e8ee" font-family="system-ui,sans-serif" font-size="12">openai</text>
+  <text x="260" y="358" fill="#e6e8ee" font-family="ui-monospace,monospace" font-size="11">gpt-4o-mini</text>
+  <rect x="390" y="342" width="52" height="20" rx="10" fill="rgba(46,160,67,0.15)"/>
+  <text x="402" y="356" fill="#2ea043" font-family="system-ui,sans-serif" font-size="11" font-weight="600">allow</text>
+  <text x="500" y="358" fill="#8b91a1" font-family="system-ui,sans-serif" font-size="12">proxied</text>
+</svg>
