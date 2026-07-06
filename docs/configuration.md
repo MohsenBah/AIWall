@@ -180,6 +180,7 @@ API key:   your upstream key (or AIWall-issued key when gateway auth ships)
 Example:
 
 ```bash
+curl http://127.0.0.1:8080/v1/models
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -H "Content-Type: application/json" \

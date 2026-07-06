@@ -23,7 +23,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Docker image + Compose + healthcheck | Done (Phase 1.9) |
 | Demo script + README quickstart | Done (Phase 1.10b) |
 | Architecture + configuration docs | Done (Phase 1.10c) |
-| `GET /v1/models` | Planned (Phase 1.11) |
+| `GET /v1/models` | Done (Phase 1.11) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 

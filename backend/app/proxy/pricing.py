@@ -61,6 +61,12 @@ class CostEstimator:
     def reload(self) -> None:
         self._prices = self._load_prices()
 
+    def list_models(self, provider_name: str) -> list[str]:
+        provider_prices = self._prices.models.get(provider_name)
+        if not provider_prices:
+            return []
+        return list(provider_prices.keys())
+
 
 def resolve_prices_path(config_path: Path, pricing_file: str) -> Path:
     prices_path = Path(pricing_file)

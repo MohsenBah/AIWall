@@ -87,6 +87,20 @@ def upstream_mock_handler(upstream_requests):
     def handler(request: httpx.Request) -> httpx.Response:
         upstream_requests.append(request)
 
+        if request.method == "GET" and request.url.path.endswith("/models"):
+            return httpx.Response(
+                200,
+                json={
+                    "object": "list",
+                    "data": [{"id": "gpt-4o-mini", "object": "model"}],
+                },
+            )
+        if request.method == "GET" and request.url.path.endswith("/api/tags"):
+            return httpx.Response(
+                200,
+                json={"models": [{"name": "llama3.2:1b"}]},
+            )
+
         body = json.loads(request.content.decode())
         if body.get("stream"):
             return httpx.Response(
