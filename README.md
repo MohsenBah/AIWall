@@ -27,6 +27,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Docker image (slim, non-root, uvicorn) | Done (Phase 1.9a) |
 | Docker Compose (AIWall + optional Ollama) | Done (Phase 1.9b) |
 | Docker polish (.dockerignore, healthcheck) | Done (Phase 1.9c) |
+| Demo script (`scripts/demo.sh`) | Done (Phase 1.10a) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -104,6 +105,8 @@ curl http://127.0.0.1:8080/healthz
 ```
 
 Copy `aiwall.yaml.example` to `aiwall.yaml` to customize providers and policies.
+
+Run `./scripts/demo.sh` against a running instance to send one normal request, one secret-leak block, and print recent audit rows.
 
 Follow this repo for updates.
 
