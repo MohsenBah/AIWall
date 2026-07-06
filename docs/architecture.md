@@ -57,12 +57,11 @@ Blocked requests never reach the upstream provider.
 | Endpoint | Method | Purpose |
 |---|---|---|
 | `/v1/chat/completions` | POST | OpenAI-compatible proxy (streaming and non-streaming) |
+| `/v1/models` | GET | Models from configured providers (OpenAI list shape) |
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards and recent events |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
 | `/static/*` | GET | Dashboard CSS |
-
-**Planned (Phase 1.11):** `GET /v1/models` — aggregate models from configured providers.
 
 Clients should set their OpenAI base URL to:
 
