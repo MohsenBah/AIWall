@@ -22,7 +22,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Web dashboard (events, summary, HTMX filters) | Done (Phase 1.8) |
 | Docker image + Compose + healthcheck | Done (Phase 1.9) |
 | Demo script + README quickstart | Done (Phase 1.10b) |
-| Architecture + configuration docs | Planned (Phase 1.10c) |
+| Architecture + configuration docs | Done (Phase 1.10c) |
+| `GET /v1/models` | Planned (Phase 1.11) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -179,7 +180,7 @@ Clients point their base URL to AIWall:
 http://aiwall-host:8080/v1
 ```
 
-Policies and providers are configured in `aiwall.yaml`. See `aiwall.yaml.example` for the schema. Full configuration reference: `docs/configuration.md` (Phase 1.10c).
+Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema and [docs/architecture.md](docs/architecture.md) for request flow.
 
 ## Contributing
 
