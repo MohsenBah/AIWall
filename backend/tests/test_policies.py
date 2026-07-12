@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Mohsen Bah
 # SPDX-License-Identifier: Apache-2.0
+from app.config import load_config
 from app.policies.conditions import evaluate_condition
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine
@@ -61,3 +62,30 @@ def test_policy_engine_hot_reload(tmp_path) -> None:
         ).read_text()
     )
     assert engine.evaluate(allow_context).action == "block"
+
+
+def test_policy_engine_caches_config_until_mtime_changes(tmp_path, monkeypatch) -> None:
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: block-long-input
+    when: input.length > 5
+    action: block""",
+    )
+    engine = PolicyEngine(config_path)
+    context = PolicyContext(body=b"hello world", model="gpt-4o-mini", input_length=11)
+    load_calls = {"count": 0}
+    original_load_config = load_config
+
+    def counting_load_config(path):
+        load_calls["count"] += 1
+        return original_load_config(path)
+
+    monkeypatch.setattr("app.policies.engine.load_config", counting_load_config)
+
+    assert engine.evaluate(context).action == "block"
+    assert engine.evaluate(context).action == "block"
+    assert load_calls["count"] == 1
+
+    config_path.write_text(config_path.read_text() + "\n")
+    assert engine.evaluate(context).action == "block"
+    assert load_calls["count"] == 2
