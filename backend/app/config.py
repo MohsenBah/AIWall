@@ -43,12 +43,18 @@ class PricingConfig(BaseModel):
     file: str = "prices.yaml"
 
 
+class GatewayAuthConfig(BaseModel):
+    enabled: bool = False
+    api_key_env: str = "AIWALL_API_KEY"
+
+
 class AIWallConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     providers: list[ProviderConfig] = Field(default_factory=list)
     policies: list[PolicyConfig] = Field(default_factory=list)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     pricing: PricingConfig = Field(default_factory=PricingConfig)
+    gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
 
 
 def resolve_config_path(path: Path | str | None = None) -> Path:

@@ -24,6 +24,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Demo script + README quickstart | Done (Phase 1.10b) |
 | Architecture + configuration docs | Done (Phase 1.10c) |
 | `GET /v1/models` | Done (Phase 1.11) |
+| Optional gateway auth (`gateway_auth`) | Done (Phase 1.12) |
+| CI + lint (ruff, GitHub Actions) | Planned (Phase 1.13) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 
@@ -148,6 +150,7 @@ SQLite audit data is stored at `data/aiwall.db` by default.
 | `AIWALL_CONFIG` | `aiwall.yaml` (local) / `/app/aiwall.yaml` (Docker) | Path to the AIWall YAML config file |
 | `AIWALL_PORT` | `8080` | HTTP port for the proxy and dashboard |
 | `OPENAI_API_KEY` | _(unset)_ | API key forwarded to the OpenAI-compatible provider |
+| `AIWALL_API_KEY` | _(unset)_ | Client key required when `gateway_auth.enabled: true` |
 | `OLLAMA_PORT` | `11434` | Host port when running Ollama via `--profile ollama` |
 
 Edit `deploy/examples/aiwall.docker.yaml` (Docker) or `aiwall.yaml` (local) for providers and policies. Docker persists audit data in the `aiwall_data` volume.

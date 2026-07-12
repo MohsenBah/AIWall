@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
+from app.auth.gateway import gateway_auth_enabled, strip_client_authorization
 from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
@@ -105,6 +106,8 @@ class ChatCompletionProxy:
         provider = select_provider(self._config, model)
         upstream_url = build_chat_completions_url(provider)
         incoming_headers = _filter_forward_headers(request.headers)
+        if gateway_auth_enabled(self._config):
+            incoming_headers = strip_client_authorization(incoming_headers)
         upstream_headers = build_upstream_headers(provider, incoming_headers)
         request_id = new_request_id()
         input_length = measure_input_length(body)
