@@ -46,6 +46,10 @@ logging:
 
 pricing:
   file: prices.yaml
+
+gateway_auth:
+  enabled: false
+  api_key_env: AIWALL_API_KEY
 ```
 
 ## Schema reference
@@ -141,6 +145,17 @@ models:
 
 Costs are USD per million tokens. Unknown models return `null` estimated cost in audit logs.
 
+### `gateway_auth`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Require a client API key before proxying `/v1/*` routes |
+| `api_key_env` | string | `AIWALL_API_KEY` | Environment variable holding the expected client key |
+
+When enabled, clients must send `Authorization: Bearer <AIWALL_API_KEY>`. The gateway validates this key and does **not** forward it upstream; provider keys still come from each provider's `api_key_env` (e.g. `OPENAI_API_KEY`).
+
+Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN.
+
 ## Environment variables
 
 | Variable | Default | Description |
@@ -148,6 +163,7 @@ Costs are USD per million tokens. Unknown models return `null` estimated cost in
 | `AIWALL_CONFIG` | `aiwall.yaml` | Path to configuration file |
 | `AIWALL_PORT` | `8080` | HTTP listen port |
 | `OPENAI_API_KEY` | _(unset)_ | Used when a provider sets `api_key_env: OPENAI_API_KEY` |
+| `AIWALL_API_KEY` | _(unset)_ | Client key checked when `gateway_auth.enabled: true` |
 | `OLLAMA_PORT` | `11434` | Host port for Ollama in Docker Compose (`--profile ollama`) |
 
 Provider-specific keys are read from the environment variable named in `api_key_env`.
@@ -174,7 +190,7 @@ Point any OpenAI-compatible client to AIWall:
 
 ```text
 Base URL:  http://127.0.0.1:8080/v1
-API key:   your upstream key (or AIWall-issued key when gateway auth ships)
+API key:   your upstream key (or `AIWALL_API_KEY` when gateway auth is enabled)
 ```
 
 Example:

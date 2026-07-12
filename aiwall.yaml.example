@@ -31,3 +31,8 @@ logging:
 
 pricing:
   file: prices.yaml
+
+# Optional: require clients to present an AIWall-issued API key (off by default).
+# gateway_auth:
+#   enabled: true
+#   api_key_env: AIWALL_API_KEY

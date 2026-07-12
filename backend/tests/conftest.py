@@ -21,7 +21,11 @@ models:
     return prices_path
 
 
-def write_test_config(tmp_path: Path, policies_block: str = "") -> Path:
+def write_test_config(
+    tmp_path: Path,
+    policies_block: str = "",
+    extra_yaml: str = "",
+) -> Path:
     db_path = tmp_path / "aiwall.db"
     config_path = tmp_path / "aiwall.yaml"
     block = policies_block.strip("\n")
@@ -29,6 +33,8 @@ def write_test_config(tmp_path: Path, policies_block: str = "") -> Path:
         policies_yaml = f"policies:\n{block}"
     else:
         policies_yaml = "policies: []"
+    extra = extra_yaml.strip("\n")
+    extra_section = f"\n{extra}" if extra else ""
     config_path.write_text(
         f"""
 server:
@@ -47,7 +53,7 @@ providers:
 {policies_yaml}
 logging:
   store: sqlite:///{db_path.as_posix()}
-  log_raw_prompts: false
+  log_raw_prompts: false{extra_section}
 """.strip()
     )
     write_test_prices(config_path)

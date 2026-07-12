@@ -27,3 +27,7 @@ logging:
   store: sqlite:///data/aiwall.db
   log_raw_prompts: false
   retention_days: 90
+
+# gateway_auth:
+#   enabled: true
+#   api_key_env: AIWALL_API_KEY
