@@ -25,7 +25,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Architecture + configuration docs | Done (Phase 1.10c) |
 | `GET /v1/models` | Done (Phase 1.11) |
 | Optional gateway auth (`gateway_auth`) | Done (Phase 1.12) |
-| CI + lint (ruff, GitHub Actions) | Planned (Phase 1.13) |
+| CI + lint (ruff, GitHub Actions) | Done (Phase 1.13) |
+| Policy engine reload caching | Planned (Phase 1.14) |
 | Web control panel (policy toggles, alerts) | Planned |
 | Alerts (Telegram / webhook / ntfy) | Planned |
 

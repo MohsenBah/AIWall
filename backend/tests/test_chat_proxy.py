@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 import json
 
 import httpx
@@ -103,7 +105,8 @@ async def test_chat_completions_upstream_error_is_passthrough(
 
     mock_transport = httpx.MockTransport(error_handler)
     http_client = httpx.AsyncClient(transport=mock_transport)
-    from httpx import ASGITransport, AsyncClient as TestClient
+    from httpx import ASGITransport
+    from httpx import AsyncClient as TestClient
 
     from app.main import create_app
 

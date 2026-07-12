@@ -1,8 +1,11 @@
-from datetime import datetime, timedelta, timezone
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import create_engine
 
 from app.audit.writer import AuditEvent, AuditWriter
 from app.storage.database import init_db
-from sqlalchemy import create_engine
 
 
 def _make_writer(tmp_path) -> AuditWriter:
@@ -29,7 +32,7 @@ def _event(decision: str, cost: float | None, timestamp: datetime) -> AuditEvent
 
 def test_summary_counts_and_cost_within_window(tmp_path) -> None:
     writer = _make_writer(tmp_path)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     writer.write(_event("allow", 0.001, now))
     writer.write(_event("allow", 0.002, now))
@@ -47,7 +50,7 @@ def test_summary_counts_and_cost_within_window(tmp_path) -> None:
 
 def test_summary_excludes_events_outside_window(tmp_path) -> None:
     writer = _make_writer(tmp_path)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     writer.write(_event("allow", 0.005, now))
     writer.write(_event("allow", 0.005, now - timedelta(hours=48)))
@@ -61,7 +64,7 @@ def test_summary_excludes_events_outside_window(tmp_path) -> None:
 
 def test_list_recent_filters_by_decision_and_provider(tmp_path) -> None:
     writer = _make_writer(tmp_path)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     writer.write(_event("allow", 0.001, now))
     writer.write(_event("allow", 0.002, now))
