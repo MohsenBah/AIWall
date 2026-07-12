@@ -28,9 +28,23 @@ def _match_reason(when: str) -> str:
 class PolicyEngine:
     def __init__(self, config_path: Path):
         self._config_path = config_path
+        self._cached_mtime: float | None = None
+        self._cached_config: AIWallConfig | None = None
 
     def reload(self) -> AIWallConfig:
-        return load_config(self._config_path)
+        if not self._config_path.exists():
+            self._cached_mtime = None
+            self._cached_config = AIWallConfig()
+            return self._cached_config
+
+        mtime = self._config_path.stat().st_mtime
+        if self._cached_config is not None and self._cached_mtime == mtime:
+            return self._cached_config
+
+        config = load_config(self._config_path)
+        self._cached_mtime = mtime
+        self._cached_config = config
+        return config
 
     def evaluate(self, context: PolicyContext) -> PolicyResult:
         config = self.reload()
