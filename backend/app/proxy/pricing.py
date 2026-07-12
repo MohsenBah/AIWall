@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 """Static model pricing loaded from prices.yaml."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 """Policy evaluation engine with hot reload from aiwall.yaml."""
 
 from __future__ import annotations
@@ -15,6 +17,12 @@ class PolicyResult:
     action: str
     policy_id: str | None = None
     reason: str | None = None
+
+
+def _match_reason(when: str) -> str:
+    if when.strip() == "input.contains_secret":
+        return "secret-detected"
+    return when
 
 
 class PolicyEngine:
@@ -41,19 +49,17 @@ class PolicyEngine:
                 continue
 
             if policy.action == "block":
-                reason = "secret-detected" if policy.when.strip() == "input.contains_secret" else policy.when
                 block_match = PolicyResult(
                     action="block",
                     policy_id=policy.name,
-                    reason=reason,
+                    reason=_match_reason(policy.when),
                 )
                 break
             if policy.action == "warn" and warn_match is None:
-                reason = "secret-detected" if policy.when.strip() == "input.contains_secret" else policy.when
                 warn_match = PolicyResult(
                     action="warn",
                     policy_id=policy.name,
-                    reason=reason,
+                    reason=_match_reason(policy.when),
                 )
 
         if block_match is not None:

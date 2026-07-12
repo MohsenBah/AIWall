@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 from app.scanners.secrets import SecretScanner, scan_request_body
 
 # AWS documentation example key — safe for tests, matches detector pattern.

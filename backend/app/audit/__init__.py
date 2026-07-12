@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 """Audit logging package."""
 
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id

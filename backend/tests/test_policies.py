@@ -1,5 +1,5 @@
-import pytest
-
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 from app.policies.conditions import evaluate_condition
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine

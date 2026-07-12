@@ -1,9 +1,11 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 """Persist audit events to SQLite."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.engine import Engine
 
@@ -64,7 +66,7 @@ class AuditWriter:
 
     def write(self, event: AuditEvent) -> AuditEventRow:
         row = AuditEventRow(
-            timestamp=event.timestamp or datetime.now(timezone.utc),
+            timestamp=event.timestamp or datetime.now(UTC),
             request_id=event.request_id,
             user_id=event.user_id,
             app_id=event.app_id,
@@ -116,7 +118,7 @@ class AuditWriter:
     def summary(self, window_hours: int = 24) -> AuditSummary:
         from sqlalchemy import func, select
 
-        since = datetime.now(timezone.utc) - timedelta(hours=window_hours)
+        since = datetime.now(UTC) - timedelta(hours=window_hours)
         with self._session_factory() as session:
             count_stmt = (
                 select(AuditEventRow.decision, func.count())

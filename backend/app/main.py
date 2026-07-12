@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
 """AIWall FastAPI application factory."""
 
 from __future__ import annotations
@@ -14,8 +16,8 @@ from app import __version__
 from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
 from app.policies.engine import PolicyEngine
-from app.proxy.routes import router as proxy_router
 from app.proxy.pricing import CostEstimator, resolve_prices_path
+from app.proxy.routes import router as proxy_router
 from app.storage.database import create_engine_from_config, init_db
 
 DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0, read=300.0, write=60.0, pool=10.0)
