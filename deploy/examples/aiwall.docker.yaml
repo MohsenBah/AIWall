@@ -29,6 +29,7 @@ logging:
   retention_days: 90
 
 scanners:
+  ignore_examples: true
   entropy:
     enabled: true
     min_length: 20

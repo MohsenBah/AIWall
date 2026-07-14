@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter
+from collections.abc import Callable
 
 _BASE64ISH_TOKEN = re.compile(r"[A-Za-z0-9+/=_-]+")
 _HEX_TOKEN = re.compile(r"[0-9a-fA-F]+")
@@ -43,8 +44,11 @@ def contains_high_entropy_string(
     *,
     min_length: int = 20,
     threshold: float = 4.5,
+    is_allowed: Callable[[str], bool] | None = None,
 ) -> bool:
     for token in _entropy_candidates(text, min_length):
+        if is_allowed and is_allowed(token):
+            continue
         if shannon_entropy(token) >= threshold:
             return True
         normalized = shannon_entropy(token) / _charset_max_entropy(token)

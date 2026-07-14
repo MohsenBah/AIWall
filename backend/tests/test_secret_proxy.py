@@ -5,7 +5,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.main import create_app
 from tests.conftest import write_test_config
-from tests.test_secret_scanner import FAKE_AWS_KEY
+from tests.test_secret_scanner import _random_aws_key
 
 
 @pytest.mark.asyncio
@@ -28,7 +28,7 @@ async def test_secret_in_prompt_is_blocked_and_logged(tmp_path, upstream_mock_ha
             "/v1/chat/completions",
             json={
                 "model": "gpt-4o-mini",
-                "messages": [{"role": "user", "content": f"my aws key is {FAKE_AWS_KEY}"}],
+                "messages": [{"role": "user", "content": f"my aws key is {_random_aws_key()}"}],
             },
         )
 

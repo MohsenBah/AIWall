@@ -1,32 +1,43 @@
 # SPDX-FileCopyrightText: 2026 Mohsen Bah
 # SPDX-License-Identifier: Apache-2.0
+import secrets
+import string
+
 import pytest
 
 from app.scanners.secrets import SecretScanner, scan_request_body
 
-# AWS documentation example key — safe for tests, matches detector pattern.
-FAKE_AWS_KEY = "AKIAIOSFODNN7EXAMPLE"
+AWS_DOC_EXAMPLE = "AKIAIOSFODNN7EXAMPLE"
+
+
+def _random_aws_key() -> str:
+    suffix = "".join(secrets.choice(string.digits + string.ascii_uppercase) for _ in range(16))
+    return "AKIA" + suffix
 
 
 def _fake_slack_token() -> str:
-    # Assembled at runtime to avoid push-protection false positives in source.
-    return "slack " + "-".join(["xoxb", "0" * 11, "0" * 12, "X" * 24])
+    body = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(24))
+    return "slack " + "-".join(["xoxb", "1" * 11, "2" * 12, body])
 
 
 def _fake_stripe_secret_key() -> str:
-    return "stripe sk_test_" + ("0" * 24)
+    body = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(24))
+    return "stripe sk_live_" + body
 
 
 def _fake_stripe_restricted_key() -> str:
-    return "stripe rk_test_" + ("0" * 24)
+    body = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(24))
+    return "stripe rk_live_" + body
 
 
 def _fake_google_api_key() -> str:
-    return "google AIza" + ("EXAMPLE" + "0" * 28)
+    body = "".join(secrets.choice(string.ascii_letters + string.digits + "-_") for _ in range(35))
+    return "google AIza" + body
 
 
 def _fake_azure_storage_key() -> str:
-    return "azure AccountKey=" + ("A" * 44)
+    body = "".join(secrets.choice(string.ascii_letters + string.digits + "+/=") for _ in range(44))
+    return "azure AccountKey=" + body
 
 
 def _fake_gcp_service_account() -> str:
@@ -34,7 +45,8 @@ def _fake_gcp_service_account() -> str:
 
 
 def _fake_database_url() -> str:
-    return "db postgres://dbuser:dbpass@127.0.0.1:5432/app"
+    password = secrets.token_urlsafe(12)
+    return f"db postgres://dbuser:{password}@127.0.0.1:5432/app"
 
 
 def _fake_pkcs8_private_key() -> str:
@@ -60,15 +72,23 @@ _RULE_SAMPLES = {
 
 def test_secret_scanner_detects_aws_key() -> None:
     scanner = SecretScanner()
-    result = scanner.scan(f"my key is {FAKE_AWS_KEY}")
+    result = scanner.scan(f"my key is {_random_aws_key()}")
 
     assert result.contains_secret is True
     assert any(match.rule_id == "aws-access-key" for match in result.matches)
 
 
+def test_secret_scanner_ignores_aws_documentation_example() -> None:
+    scanner = SecretScanner()
+    result = scanner.scan(f"from the AWS docs: {AWS_DOC_EXAMPLE}")
+
+    assert result.contains_secret is False
+
+
 def test_secret_scanner_detects_github_token() -> None:
     scanner = SecretScanner()
-    result = scanner.scan("token ghp_" + ("0" * 36))
+    body = "ghp_" + secrets.token_hex(18)
+    result = scanner.scan("token " + body)
 
     assert result.contains_secret is True
     assert any(match.rule_id == "github-token" for match in result.matches)
@@ -94,7 +114,7 @@ def test_secret_scanner_ignores_clean_text() -> None:
 def test_scan_request_body_from_chat_payload() -> None:
     body = (
         b'{"model":"gpt-4o-mini","messages":[{"role":"user","content":"key '
-        + FAKE_AWS_KEY.encode()
+        + _random_aws_key().encode()
         + b'"}]}'
     )
     result = scan_request_body(body)

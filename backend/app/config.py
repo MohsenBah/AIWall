@@ -56,8 +56,21 @@ class EntropyScannerConfig(BaseModel):
     threshold: float = 4.5
 
 
+class RuleScannerConfig(BaseModel):
+    enabled: bool = True
+    min_length: int | None = None
+
+
+class ScannerAllowlistConfig(BaseModel):
+    literals: list[str] = Field(default_factory=list)
+    patterns: list[str] = Field(default_factory=list)
+
+
 class ScannerConfig(BaseModel):
     entropy: EntropyScannerConfig = Field(default_factory=EntropyScannerConfig)
+    ignore_examples: bool = True
+    allowlist: ScannerAllowlistConfig = Field(default_factory=ScannerAllowlistConfig)
+    rules: dict[str, RuleScannerConfig] = Field(default_factory=dict)
 
 
 class AIWallConfig(BaseModel):
