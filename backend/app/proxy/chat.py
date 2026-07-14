@@ -90,7 +90,7 @@ class ChatCompletionProxy:
         model: str,
         input_length: int,
     ) -> PolicyResult:
-        scan_result = scan_request_body(body)
+        scan_result = scan_request_body(body, self._config.scanners)
         projected_usage = estimate_request_token_usage(body)
         cost_estimate = self._cost_estimator.estimate(provider_name, model, projected_usage)
         context = PolicyContext(

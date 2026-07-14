@@ -28,7 +28,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | CI + lint (ruff, GitHub Actions) | Done (Phase 1.13) |
 | Policy engine reload caching | Done (Phase 1.14) |
 | Secret scanner rule pack expansion | Done (Phase 2.1) |
-| Entropy-based secret detection | Planned (Phase 2.2) |
+| Entropy-based secret detection | Done (Phase 2.2) |
+| False-positive tuning (allowlists) | Planned (Phase 2.3) |
 | Web control panel (policy toggles, alerts) | Planned |
 
 ## What AIWall Does

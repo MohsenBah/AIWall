@@ -130,6 +130,16 @@ Cost-based policies use a pre-forward estimate (prompt tokens + `max_tokens` / `
 |---|---|---|---|
 | `file` | string | `prices.yaml` | Path relative to the config file directory |
 
+### `scanners`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `entropy.enabled` | boolean | `true` | Detect high-entropy base64/hex-like strings |
+| `entropy.min_length` | integer | `20` | Minimum candidate token length |
+| `entropy.threshold` | float | `4.5` | Shannon entropy threshold (bits per character) |
+
+When regex rules do not match, entropy detection flags long random-looking tokens (unknown API key formats). Disable or raise `threshold` if you see false positives.
+
 ## `prices.yaml`
 
 ```yaml
@@ -190,6 +200,7 @@ The built-in scanner runs on request message content. Rules include:
 | `jwt` | JSON Web Token shape |
 | `generic-api-key` | `api_key=…`, `secret_key=…`, etc. |
 | `dotenv-secret` | `.env`-style `KEY=value` lines |
+| `high-entropy` | Long high-entropy base64/hex-like strings |
 
 Wire into policy with `when: input.contains_secret` and `action: block`.
 

@@ -7,6 +7,9 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.config import ScannerConfig
+from app.scanners.entropy import contains_high_entropy_string
+
 
 @dataclass(frozen=True)
 class SecretMatch:
@@ -112,6 +115,9 @@ _COMPILED_RULES = tuple(
 
 
 class SecretScanner:
+    def __init__(self, config: ScannerConfig | None = None):
+        self._config = config or ScannerConfig()
+
     def scan(self, text: str) -> ScanResult:
         if not text:
             return ScanResult(contains_secret=False)
@@ -121,13 +127,26 @@ class SecretScanner:
             if pattern.search(text):
                 matches.append(SecretMatch(rule_id=rule_id, description=description))
 
+        entropy = self._config.entropy
+        if entropy.enabled and contains_high_entropy_string(
+            text,
+            min_length=entropy.min_length,
+            threshold=entropy.threshold,
+        ):
+            matches.append(
+                SecretMatch(
+                    rule_id="high-entropy",
+                    description="High-entropy secret-like string",
+                )
+            )
+
         return ScanResult(contains_secret=bool(matches), matches=tuple(matches))
 
 
-def scan_request_body(body: bytes) -> ScanResult:
+def scan_request_body(body: bytes, scanner_config: ScannerConfig | None = None) -> ScanResult:
     from app.audit.helpers import extract_prompt_text
 
     text = extract_prompt_text(body)
     if text is None and body:
         text = body.decode("utf-8", errors="replace")
-    return SecretScanner().scan(text or "")
+    return SecretScanner(scanner_config).scan(text or "")
