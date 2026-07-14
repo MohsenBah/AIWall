@@ -28,6 +28,12 @@ logging:
   log_raw_prompts: false
   retention_days: 90
 
+scanners:
+  entropy:
+    enabled: true
+    min_length: 20
+    threshold: 4.5
+
 # gateway_auth:
 #   enabled: true
 #   api_key_env: AIWALL_API_KEY

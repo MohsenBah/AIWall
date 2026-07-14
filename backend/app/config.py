@@ -50,6 +50,16 @@ class GatewayAuthConfig(BaseModel):
     api_key_env: str = "AIWALL_API_KEY"
 
 
+class EntropyScannerConfig(BaseModel):
+    enabled: bool = True
+    min_length: int = 20
+    threshold: float = 4.5
+
+
+class ScannerConfig(BaseModel):
+    entropy: EntropyScannerConfig = Field(default_factory=EntropyScannerConfig)
+
+
 class AIWallConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     providers: list[ProviderConfig] = Field(default_factory=list)
@@ -57,6 +67,7 @@ class AIWallConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     pricing: PricingConfig = Field(default_factory=PricingConfig)
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
+    scanners: ScannerConfig = Field(default_factory=ScannerConfig)
 
 
 def resolve_config_path(path: Path | str | None = None) -> Path:

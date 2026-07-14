@@ -45,7 +45,7 @@ Blocked requests never reach the upstream provider.
 |---|---|
 | `app/proxy/` | OpenAI-compatible forwarding, token/cost accounting |
 | `app/policies/` | YAML policy engine with hot reload on each request |
-| `app/scanners/` | Regex secret detection |
+| `app/scanners/` | Regex and entropy-based secret detection |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
 | `app/storage/` | Database engine and schema migrations |
