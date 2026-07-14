@@ -37,9 +37,57 @@ _SECRET_RULES: tuple[tuple[str, str, str], ...] = (
         "GitHub fine-grained token",
     ),
     (
+        "slack-token",
+        r"\bxox[abprsb]-[0-9A-Za-z-]{10,}\b",
+        "Slack token",
+    ),
+    (
+        "stripe-secret-key",
+        r"\bsk_(?:live|test)_[0-9a-zA-Z]{16,}\b",
+        "Stripe secret key",
+    ),
+    (
+        "stripe-restricted-key",
+        r"\brk_(?:live|test)_[0-9a-zA-Z]{16,}\b",
+        "Stripe restricted key",
+    ),
+    (
+        "google-api-key",
+        r"\bAIza[0-9A-Za-z\-_]{35}\b",
+        "Google API key",
+    ),
+    (
+        "azure-storage-key",
+        r"(?i)(?:AccountKey|SharedAccessKey)=['\"]?[A-Za-z0-9+/=]{40,}",
+        "Azure storage access key",
+    ),
+    (
+        "gcp-service-account",
+        r'"type"\s*:\s*"service_account"',
+        "GCP service account JSON",
+    ),
+    (
+        "database-url",
+        (
+            r"(?i)(?:postgres|postgresql|mysql|mongodb(?:\+srv)?|redis)"
+            r"://[^\s:@/]+:[^\s@/]+@"
+        ),
+        "Database connection URL with credentials",
+    ),
+    (
         "ssh-private-key",
-        r"-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----",
+        r"-----BEGIN (?:RSA |OPENSSH |EC |DSA )PRIVATE KEY-----",
         "SSH private key",
+    ),
+    (
+        "pkcs8-private-key",
+        r"-----BEGIN PRIVATE KEY-----",
+        "PKCS#8 private key",
+    ),
+    (
+        "encrypted-private-key",
+        r"-----BEGIN ENCRYPTED PRIVATE KEY-----",
+        "Encrypted private key",
     ),
     (
         "jwt",

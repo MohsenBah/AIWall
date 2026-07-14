@@ -8,7 +8,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 
 ## Status
 
-**Community MVP (Phase 1) is feature-complete for proxy, policies, audit logging, dashboard, and Docker deployment.** Remaining work: policy toggles in the GUI, alerting, and additional docs.
+**Phase 1 (Community MVP) is complete.** Phase 2 adds stronger developer secret protection.
 
 | Component | Status |
 |---|---|
@@ -27,8 +27,9 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Optional gateway auth (`gateway_auth`) | Done (Phase 1.12) |
 | CI + lint (ruff, GitHub Actions) | Done (Phase 1.13) |
 | Policy engine reload caching | Done (Phase 1.14) |
+| Secret scanner rule pack expansion | Done (Phase 2.1) |
+| Entropy-based secret detection | Planned (Phase 2.2) |
 | Web control panel (policy toggles, alerts) | Planned |
-| Alerts (Telegram / webhook / ntfy) | Planned |
 
 ## What AIWall Does
 

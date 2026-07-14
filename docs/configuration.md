@@ -177,7 +177,16 @@ The built-in scanner runs on request message content. Rules include:
 | `aws-access-key` | AWS access key IDs (`AKIA…`) |
 | `github-token` | GitHub personal/access tokens |
 | `github-fine-grained-token` | GitHub fine-grained tokens |
-| `ssh-private-key` | PEM private key headers |
+| `slack-token` | Slack bot/user tokens (`xox…`) |
+| `stripe-secret-key` | Stripe secret keys (`sk_live_`, `sk_test_`) |
+| `stripe-restricted-key` | Stripe restricted keys (`rk_live_`, `rk_test_`) |
+| `google-api-key` | Google API keys (`AIza…`) |
+| `azure-storage-key` | Azure storage account keys |
+| `gcp-service-account` | GCP service account JSON |
+| `database-url` | Database URLs with embedded credentials |
+| `ssh-private-key` | PEM SSH private keys |
+| `pkcs8-private-key` | PKCS#8 private keys |
+| `encrypted-private-key` | Encrypted PEM private keys |
 | `jwt` | JSON Web Token shape |
 | `generic-api-key` | `api_key=…`, `secret_key=…`, etc. |
 | `dotenv-secret` | `.env`-style `KEY=value` lines |
