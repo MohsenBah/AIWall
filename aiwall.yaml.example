@@ -33,10 +33,20 @@ pricing:
   file: prices.yaml
 
 scanners:
+  ignore_examples: true
   entropy:
     enabled: true
     min_length: 20
     threshold: 4.5
+  allowlist:
+    literals: []
+    patterns: []
+  rules:
+    # Example: disable JWT detection or raise min length for generic keys
+    # jwt:
+    #   enabled: false
+    # generic-api-key:
+    #   min_length: 24
 
 # Optional: require clients to present an AIWall-issued API key (off by default).
 # gateway_auth:

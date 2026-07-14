@@ -1,0 +1,234 @@
+# Benign prompt samples for false-positive rate measurement.
+# Each non-empty, non-comment line must not contain real credentials.
+How do I refactor this Python function to use async/await?
+Explain the difference between TCP and UDP in simple terms.
+Write a haiku about autumn leaves falling in the park.
+Summarize the plot of Pride and Prejudice in three sentences.
+What are best practices for REST API versioning?
+Help me debug a TypeError: unsupported operand type(s) for +
+Convert 72 Fahrenheit to Celsius and show the formula.
+Draft a polite email declining a meeting invitation.
+Compare PostgreSQL and SQLite for a small side project.
+What does the git command git rebase -i do?
+Suggest names for a coffee shop near the waterfront.
+How can I improve sleep quality without medication?
+Translate "good morning" into French and Spanish.
+Outline a weekly workout plan for beginners at home.
+What is the capital of Australia and why is it Canberra?
+Review this sentence for grammar: "Their going to the store."
+List pros and cons of remote work for software teams.
+Explain what a bloom filter is and when to use one.
+Give me five interview questions for a junior backend role.
+How do I center a div with CSS flexbox?
+What is the time complexity of binary search?
+Recommend books about product management for engineers.
+Write a bash one-liner to count lines in all .log files.
+Describe how HTTPS handshakes work at a high level.
+What nutrients are in a medium banana?
+Help me plan a two-day itinerary for Kyoto.
+When should I use a UUID instead of an auto-increment id?
+Explain the CAP theorem with a practical example.
+How do I reset a forgotten Linux user password safely?
+What is the difference between precision and recall?
+Suggest team-building activities for a distributed team.
+Write unit test ideas for a shopping-cart module.
+How does garbage collection work in Go?
+Give tips for writing accessible web forms.
+What causes npm ERR! ERESOLVE and how do I fix it?
+Explain MVCC in PostgreSQL in plain language.
+Draft release notes for a bugfix patch version.
+How can I reduce Docker image size for a Python app?
+What is dependency injection and why use it?
+Compare React Server Components vs traditional SSR.
+Suggest a commit message for fixing a race condition.
+How do I parse ISO-8601 dates in JavaScript?
+What are common causes of memory leaks in Node.js?
+Explain eventual consistency to a non-technical stakeholder.
+Give me a checklist before deploying to production.
+How does DNS propagation work after changing records?
+What is the difference between OAuth and OpenID Connect?
+Recommend a study plan for learning Rust in 30 days.
+How do I write a good README for an open-source library?
+Explain what idempotency means for HTTP APIs.
+What is the purpose of an index in a relational database?
+Help me brainstorm slogans for a community garden event.
+How do I configure CORS in FastAPI?
+Describe the observer pattern with a short code sketch idea.
+What foods pair well with grilled salmon?
+How can I estimate cloud costs for a small SaaS MVP?
+Explain what a reverse proxy is and why teams use one.
+What is the difference between symmetric and asymmetric encryption?
+Give advice for first-time conference speakers.
+How do I squash the last three git commits safely?
+What does ACID stand for in databases?
+Suggest ways to reduce alert fatigue in on-call rotation.
+How do I mock HTTP calls in pytest?
+Explain the difference between stack and heap memory.
+What are SMART goals and give one example for learning guitar.
+How does a content delivery network speed up websites?
+Write a friendly out-of-office auto-reply for vacation.
+What is the difference between authentication and authorization?
+How do I troubleshoot high CPU usage on a Linux server?
+Explain what technical debt is without being dismissive.
+Give three prompts for creative writing about space travel.
+How do I export a chart from matplotlib to PNG?
+What is pair programming and when is it helpful?
+Describe how to run a blameless postmortem.
+How do I set up pre-commit hooks for Python projects?
+What is the difference between latency and throughput?
+Suggest interview answers for "tell me about yourself" as a developer.
+How does a hash table handle collisions?
+Explain what a feature flag is and when to use one.
+What is the difference between compiled and interpreted languages?
+Help me write acceptance criteria for a login page.
+How do I rotate secrets in Kubernetes without downtime?
+Explain the single responsibility principle with an example.
+What are common pitfalls when using ORMs?
+How do I profile a slow SQL query?
+Describe what a circuit breaker pattern does in microservices.
+What is the difference between unit and integration tests?
+Give tips for onboarding a new engineer in week one.
+How do I configure structured logging in Python?
+Explain what eventual delivery guarantees mean for message queues.
+What is the difference between horizontal and vertical scaling?
+Suggest ways to collect user feedback for a beta product.
+How do I handle timezone-aware datetimes in Python?
+Explain what a monolith is and when it is still a good choice.
+What is the difference between staging and production environments?
+Help me outline a blog post about homelab networking basics.
+How do I validate environment variables at application startup?
+Explain what blue-green deployment means.
+What is the difference between SQL and NoSQL databases?
+Give a concise explanation of what Docker Compose is for.
+How do I write a migration to add a nullable column?
+Explain what rate limiting protects against.
+What is the difference between a framework and a library?
+Suggest keyboard shortcuts that improve developer productivity.
+How do I safely delete unused branches in git?
+Explain what a webhook is with a concrete use case.
+What is the difference between mean, median, and mode?
+Help me draft OKRs for improving CI reliability this quarter.
+How do I configure retries with exponential backoff?
+Explain what schema validation does in an API gateway.
+What is the difference between blocking and non-blocking I/O?
+Give examples of good error messages for API clients.
+How do I monitor disk usage trends on a Linux host?
+Explain what a service mesh is in one paragraph.
+What is the difference between caching and memoization?
+Suggest interview questions about system design fundamentals.
+How do I convert a cron expression to plain English?
+Explain what graceful shutdown means for a web server.
+What is the difference between a bug and a regression?
+Help me compare monorepo vs multi-repo tradeoffs.
+How do I generate a self-signed TLS certificate for local dev?
+Explain what load balancing algorithms are commonly used.
+What is the difference between JSON and JSON Lines?
+Give advice for writing useful code review comments.
+How do I paginate API results efficiently?
+Explain what a canary release is.
+What is the difference between optimistic and pessimistic locking?
+Suggest ways to document architecture decisions (ADRs).
+How do I detect flaky tests in a CI pipeline?
+Explain what eventual consistency tradeoffs look like in practice.
+What is the difference between a port and a socket?
+Help me write a project README section for contributing.
+How do I configure health checks for a background worker?
+Explain what idempotent consumers mean in event-driven systems.
+What is the difference between static and dynamic typing?
+Give tips for reducing bundle size in a frontend app.
+How do I backup SQLite safely while the app is running?
+Explain what defense in depth means for application security.
+What is the difference between authentication factors (MFA)?
+Suggest a naming convention for environment variables.
+How do I parse command-line arguments in Python with argparse?
+Explain what a saga pattern is in distributed transactions.
+What is the difference between throughput and concurrency?
+Help me plan a knowledge-sharing session for the team.
+How do I rotate API keys without breaking active clients?
+Explain what least privilege means for cloud IAM roles.
+What is the difference between logging and metrics?
+Give examples of when to use a queue vs a stream.
+How do I write a Dockerfile layer cache-friendly for Python?
+Explain what a warm standby is.
+What is the difference between a vulnerability and an exploit?
+Suggest checklist items before merging a large refactor.
+How do I test SSE streaming endpoints in FastAPI?
+Explain what backpressure means in streaming pipelines.
+What is the difference between a subnet and a VLAN?
+Help me summarize the benefits of infrastructure as code.
+How do I choose between REST and gRPC for an internal API?
+Explain what a dead letter queue is used for.
+What is the difference between encryption at rest and in transit?
+Give tips for writing migration-safe database changes.
+How do I inspect HTTP headers with curl?
+Explain what a service level objective (SLO) is.
+What is the difference between a hotfix and a patch release?
+Suggest ways to improve documentation discoverability.
+How do I configure log rotation on a Linux server?
+Explain what container orchestration solves.
+What is the difference between a cluster and a node?
+Help me draft a runbook for restarting a stuck service.
+How do I validate YAML configuration files at startup?
+Explain what zero-downtime migrations require.
+What is the difference between a token bucket and a leaky bucket?
+Give advice for reducing toil in on-call work.
+How do I compare two branches in git visually?
+Explain what a sidecar container pattern is.
+What is the difference between liveness and readiness probes?
+Suggest metrics to track for an API gateway MVP.
+How do I safely expose a local dev server to a teammate?
+Explain what prompt injection is at a high level.
+What is the difference between supervised and unsupervised learning?
+Help me write a concise incident timeline template.
+How do I configure pytest markers for slow integration tests?
+Explain what a shadow deployment is.
+What is the difference between a webhook signature and an API key?
+Give tips for keeping homelab services updated safely.
+How do I estimate token usage for a chat prompt roughly?
+Explain what audit logging should capture for compliance-friendly systems.
+What is the difference between redaction and encryption?
+Suggest policy ideas for blocking oversized prompts in an AI gateway.
+How do I monitor queue depth for a background job system?
+Explain what a policy engine evaluates in a security gateway.
+What is the difference between warn and block actions in policy design?
+Help me compare self-hosted vs managed observability stacks.
+How do I write a smoke test script for a deployed API?
+Explain what homelab automation with Ansible can look like.
+What is the difference between a profile and a role in access control?
+Give examples of safe placeholders to use in documentation snippets.
+How do I configure reverse proxy timeouts for long LLM requests?
+Explain what streaming token accounting means for cost estimation.
+What is the difference between input validation and output filtering?
+Suggest dashboard panels for tracking allow/warn/block decisions.
+How do I store configuration secrets outside of git?
+Explain what mtime-based config reload caching improves.
+What is the difference between a preset policy and a custom rule?
+Help me outline docs for secret scanning false-positive tuning.
+How do I run ruff and pytest locally before pushing?
+Explain what OpenAI-compatible proxy endpoints typically implement.
+What is the difference between provider routing and model routing?
+Give tips for demo scripts that show policy enforcement clearly.
+How do I bind-mount config files in Docker Compose read-only?
+Explain what SQLite WAL mode helps with for concurrent readers.
+What is the difference between a gateway API key and a provider API key?
+Suggest ways to keep audit logs privacy-preserving by default.
+How do I add SPDX license headers consistently across a repo?
+Explain what Phase 2 secret scanning adds beyond baseline regex rules.
+What is the difference between entropy detection and signature rules?
+Help me choose a threshold for high-entropy secret detection.
+How do I disable a single scanner rule without turning off the whole scanner?
+Explain what allowlist patterns are for in secret scanning.
+What is the difference between a literal allowlist entry and a regex allowlist?
+Give examples of documentation example keys that should not trigger alerts.
+How do I measure false-positive rate on a benign prompt corpus?
+Explain what min_length per rule tuning is meant to prevent.
+What is the difference between ignore_examples and custom allowlists?
+Help me configure scanners.rules in aiwall.yaml for a noisy environment.
+How do I verify that a blocked secret never reaches the upstream provider?
+Explain what privacy-safe block responses should include.
+What is the difference between redact and block policy actions?
+Suggest next steps after shipping entropy-based secret detection.
+How do I keep test fixtures from tripping GitHub secret scanning on push?
+Explain why runtime-built fake tokens are used in scanner unit tests.
+What is the difference between rule_id and description in scan matches?
+Help me document measured FP rate targets for the negative corpus test.

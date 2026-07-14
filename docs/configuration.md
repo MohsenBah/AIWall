@@ -134,11 +134,18 @@ Cost-based policies use a pre-forward estimate (prompt tokens + `max_tokens` / `
 
 | Field | Type | Default | Description |
 |---|---|---|---|
+| `ignore_examples` | boolean | `true` | Skip known documentation placeholders (e.g. `AKIAIOSFODNN7EXAMPLE`, repetitive `sk_test_` samples) |
 | `entropy.enabled` | boolean | `true` | Detect high-entropy base64/hex-like strings |
 | `entropy.min_length` | integer | `20` | Minimum candidate token length |
 | `entropy.threshold` | float | `4.5` | Shannon entropy threshold (bits per character) |
+| `allowlist.literals` | list of strings | `[]` | Exact matched values to ignore |
+| `allowlist.patterns` | list of strings | `[]` | Regex patterns; matched secret substrings that match are ignored |
+| `rules.<rule_id>.enabled` | boolean | `true` | Enable or disable a specific detector (including `high-entropy`) |
+| `rules.<rule_id>.min_length` | integer | rule default | Minimum matched substring length before flagging |
 
 When regex rules do not match, entropy detection flags long random-looking tokens (unknown API key formats). Disable or raise `threshold` if you see false positives.
+
+**False-positive tuning:** set `ignore_examples: true` (default) for docs/tutorials, add project-specific `allowlist` entries, or disable noisy rules under `rules`. The test suite measures false-positive rate on `backend/tests/fixtures/scanner_corpus_negative.txt` and expects ≤ 5% on that corpus.
 
 ## `prices.yaml`
 
@@ -203,6 +210,14 @@ The built-in scanner runs on request message content. Rules include:
 | `high-entropy` | Long high-entropy base64/hex-like strings |
 
 Wire into policy with `when: input.contains_secret` and `action: block`.
+
+### Tuning false positives
+
+- **`ignore_examples`** (default `true`) — skips AWS doc keys, `EXAMPLE` placeholders, and repetitive `sk_test_` / `xoxb-` tutorial values.
+- **`allowlist.literals` / `allowlist.patterns`** — project-specific values or regexes to ignore.
+- **`rules.<rule_id>`** — disable a detector or raise `min_length` for noisy rules like `generic-api-key`.
+
+The negative corpus at `backend/tests/fixtures/scanner_corpus_negative.txt` is checked in CI; the suite expects a false-positive rate ≤ 5%.
 
 ## Client setup
 
