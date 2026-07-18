@@ -86,6 +86,8 @@ http://<aiwall-host>:8080/v1
 
 Raw prompts and responses are **not** stored unless `logging.log_raw_prompts: true`. When enabled, any detected secrets are masked as `[REDACTED:<rule_id>]` before persistence. Block responses list matched `rule_ids` and never echo the raw secret.
 
+Secret detector inventory and the positive/negative test corpus are documented in [secret-scanning.md](secret-scanning.md).
+
 ## Deployment
 
 | Mode | How |

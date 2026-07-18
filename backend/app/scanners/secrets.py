@@ -139,6 +139,24 @@ _SECRET_RULES = (
     ),
 )
 
+_HEURISTIC_RULES: tuple[tuple[str, str], ...] = (
+    ("dotenv-secret", "Pasted .env / credential file"),
+    ("high-entropy", "High-entropy secret-like string"),
+)
+
+
+def supported_rule_ids() -> tuple[str, ...]:
+    """Stable rule ids for every detector, including heuristics."""
+    return tuple(rule.rule_id for rule in _SECRET_RULES) + tuple(
+        rule_id for rule_id, _ in _HEURISTIC_RULES
+    )
+
+
+def rule_catalog() -> tuple[tuple[str, str], ...]:
+    """(rule_id, description) pairs for docs and UI."""
+    regex_rules = tuple((rule.rule_id, rule.description) for rule in _SECRET_RULES)
+    return regex_rules + _HEURISTIC_RULES
+
 
 def _mask_for_rule(rule_id: str) -> str:
     return f"[REDACTED:{rule_id}]"
