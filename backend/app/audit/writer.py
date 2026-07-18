@@ -30,6 +30,7 @@ class AuditEvent:
     completion_tokens: int | None = None
     total_tokens: int | None = None
     policy_id: str | None = None
+    matched_rule_ids: str | None = None
     redaction_count: int = 0
     raw_prompt: str | None = None
     raw_response: str | None = None
@@ -86,6 +87,7 @@ class AuditWriter:
             completion_tokens=event.completion_tokens,
             total_tokens=event.total_tokens,
             policy_id=event.policy_id,
+            matched_rule_ids=event.matched_rule_ids,
             redaction_count=event.redaction_count,
             latency_ms=event.latency_ms,
             raw_prompt=event.raw_prompt,

@@ -83,7 +83,7 @@ http://<aiwall-host>:8080/v1
 - **Configuration** — `aiwall.yaml` on disk; re-read by the policy engine on each evaluation.
 - **Pricing** — `prices.yaml` beside the config file (or path set in `pricing.file`).
 
-Raw prompts and responses are **not** stored unless `logging.log_raw_prompts: true`.
+Raw prompts and responses are **not** stored unless `logging.log_raw_prompts: true`. When enabled, any detected secrets are masked as `[REDACTED:<rule_id>]` before persistence. Block responses list matched `rule_ids` and never echo the raw secret.
 
 ## Deployment
 

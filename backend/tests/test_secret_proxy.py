@@ -34,9 +34,12 @@ async def test_secret_in_prompt_is_blocked_and_logged(tmp_path, upstream_mock_ha
 
     assert response.status_code == 403
     assert response.json()["error"]["policy"] == "block-secrets"
+    assert response.json()["error"]["rule_ids"] == ["aws-access-key"]
+    assert "AKIA" not in response.text
 
     rows = app.state.audit_writer.list_recent(limit=1)
     assert rows[0].decision == "block"
     assert rows[0].reason == "secret-detected"
     assert rows[0].policy_id == "block-secrets"
+    assert rows[0].matched_rule_ids == "aws-access-key"
     await http_client.aclose()

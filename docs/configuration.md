@@ -122,7 +122,7 @@ Cost-based policies use a pre-forward estimate (prompt tokens + `max_tokens` / `
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `store` | string | `sqlite:///data/aiwall.db` | SQLite database URL |
-| `log_raw_prompts` | boolean | `false` | Store full prompt/response text in audit rows (opt-in) |
+| `log_raw_prompts` | boolean | `false` | Store prompt/response text in audit rows (opt-in). Detected secrets are always masked as `[REDACTED:<rule_id>]` before storage |
 | `retention_days` | integer | `90` | Reserved for future retention jobs (not enforced in MVP) |
 
 ### `pricing`
@@ -213,6 +213,32 @@ The built-in scanner runs on request message content. Rules include:
 Wire into policy with `when: input.contains_secret` and `action: block` (or `redact` / `warn`).
 
 `action: redact` masks matched secrets in message content as `[REDACTED:<rule_id>]` before forwarding. The audit row uses `decision: redact` and stores `redaction_count`.
+
+### Block / warn privacy
+
+Blocked secret responses are structured and never echo the raw credential:
+
+```json
+{
+  "error": {
+    "message": "Request blocked by AIWall policy: block-secrets",
+    "type": "policy_blocked",
+    "code": "policy_blocked",
+    "policy": "block-secrets",
+    "reason": "secret-detected",
+    "rule_ids": ["aws-access-key"]
+  }
+}
+```
+
+Warn and redact responses continue to the provider and add privacy-safe headers:
+
+| Header | Meaning |
+|---|---|
+| `X-AIWall-Policy-Action` | `warn` or `redact` |
+| `X-AIWall-Rule-Ids` | Comma-separated matched rule ids |
+
+Audit rows store `matched_rule_ids` (no raw secret values).
 
 ### Tuning false positives
 

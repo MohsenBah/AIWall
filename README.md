@@ -31,7 +31,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Entropy-based secret detection | Done (Phase 2.2) |
 | False-positive tuning (allowlists) | Done (Phase 2.3) |
 | Redact matched secrets before forward | Done (Phase 2.4) |
-| Privacy-safe block responses (rule ids) | Planned (Phase 2.5) |
+| Privacy-safe block responses (rule ids) | Done (Phase 2.5) |
+| `.env` / pasted-config heuristics | Planned (Phase 2.6) |
 
 ## What AIWall Does
 
