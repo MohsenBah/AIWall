@@ -17,6 +17,7 @@ class PolicyResult:
     action: str
     policy_id: str | None = None
     reason: str | None = None
+    rule_ids: tuple[str, ...] = ()
 
 
 def _match_reason(when: str) -> str:

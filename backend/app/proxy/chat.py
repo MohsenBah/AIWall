@@ -18,7 +18,7 @@ from app.auth.gateway import gateway_auth_enabled, strip_client_authorization
 from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
-from app.policies.responses import policy_blocked_response
+from app.policies.responses import policy_blocked_response, privacy_safe_headers
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
 from app.proxy.tokens import (
@@ -26,7 +26,7 @@ from app.proxy.tokens import (
     extract_stream_token_usage,
     extract_token_usage,
 )
-from app.scanners.secrets import redact_request_body, scan_request_body
+from app.scanners.secrets import ScanResult, redact_request_body, scan_request_body
 
 FORWARD_REQUEST_HEADERS = {
     "authorization",
@@ -78,6 +78,18 @@ def _policy_id_for_audit(policy_result: PolicyResult) -> str | None:
     return None
 
 
+def _with_rule_ids(result: PolicyResult, scan_result: ScanResult) -> PolicyResult:
+    if not scan_result.matches:
+        return result
+    rule_ids = tuple(match.rule_id for match in scan_result.matches)
+    return PolicyResult(
+        action=result.action,
+        policy_id=result.policy_id,
+        reason=result.reason,
+        rule_ids=rule_ids,
+    )
+
+
 class ChatCompletionProxy:
     def __init__(
         self,
@@ -110,7 +122,8 @@ class ChatCompletionProxy:
             contains_secret=scan_result.contains_secret,
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
         )
-        return self._policy_engine.evaluate(context)
+        result = self._policy_engine.evaluate(context)
+        return _with_rule_ids(result, scan_result)
 
     async def forward(self, request: Request) -> Response | StreamingResponse | JSONResponse:
         body = await request.body()
@@ -141,6 +154,7 @@ class ChatCompletionProxy:
                 latency_ms=latency_ms,
                 body=body,
                 policy_id=policy_result.policy_id,
+                rule_ids=policy_result.rule_ids,
             )
             return policy_blocked_response(policy_result)
 
@@ -150,6 +164,15 @@ class ChatCompletionProxy:
             redaction = redact_request_body(body, self._config.scanners)
             forward_body = redaction.body
             redaction_count = redaction.redaction_count
+            if redaction.rule_ids and not policy_result.rule_ids:
+                policy_result = PolicyResult(
+                    action=policy_result.action,
+                    policy_id=policy_result.policy_id,
+                    reason=policy_result.reason,
+                    rule_ids=redaction.rule_ids,
+                )
+
+        response_headers = privacy_safe_headers(policy_result)
 
         if _request_is_streaming(forward_body):
             return await self._forward_stream(
@@ -163,6 +186,7 @@ class ChatCompletionProxy:
                 started=started,
                 policy_result=policy_result,
                 redaction_count=redaction_count,
+                extra_headers=response_headers,
             )
 
         try:
@@ -187,6 +211,7 @@ class ChatCompletionProxy:
                 body=forward_body,
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
+                rule_ids=policy_result.rule_ids,
             )
             raise HTTPException(
                 status_code=502,
@@ -227,12 +252,14 @@ class ChatCompletionProxy:
             total_tokens=token_usage.total_tokens if token_usage else None,
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
             redaction_count=redaction_count,
+            rule_ids=policy_result.rule_ids,
         )
 
         return Response(
             content=upstream_response.content,
             status_code=upstream_response.status_code,
             media_type=upstream_response.headers.get("content-type", "application/json"),
+            headers=response_headers or None,
         )
 
     async def _forward_stream(
@@ -248,6 +275,7 @@ class ChatCompletionProxy:
         started: float,
         policy_result: PolicyResult,
         redaction_count: int = 0,
+        extra_headers: dict[str, str] | None = None,
     ) -> StreamingResponse | Response:
         upstream_request = self._http_client.build_request(
             "POST",
@@ -274,6 +302,7 @@ class ChatCompletionProxy:
                 body=body,
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
+                rule_ids=policy_result.rule_ids,
             )
             raise HTTPException(
                 status_code=502,
@@ -297,12 +326,14 @@ class ChatCompletionProxy:
                 body=body,
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
+                rule_ids=policy_result.rule_ids,
             )
             await upstream_response.aclose()
             return Response(
                 content=error_body,
                 status_code=upstream_response.status_code,
                 media_type=upstream_response.headers.get("content-type", "application/json"),
+                headers=extra_headers or None,
             )
 
         output_chunks: list[bytes] = []
@@ -340,10 +371,12 @@ class ChatCompletionProxy:
                     total_tokens=token_usage.total_tokens,
                     estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
                     redaction_count=redaction_count,
+                    rule_ids=policy_result.rule_ids,
                 )
 
         return StreamingResponse(
             stream_body(),
             status_code=upstream_response.status_code,
             media_type=upstream_response.headers.get("content-type", "text/event-stream"),
+            headers=extra_headers or None,
         )

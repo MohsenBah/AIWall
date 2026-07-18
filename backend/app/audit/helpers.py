@@ -10,7 +10,8 @@ import uuid
 from contextlib import contextmanager
 
 from app.audit.writer import AuditEvent, AuditWriter
-from app.config import AIWallConfig
+from app.config import AIWallConfig, ScannerConfig
+from app.scanners.secrets import redact_request_body
 
 
 def new_request_id() -> str:
@@ -65,6 +66,17 @@ def extract_prompt_text(body: bytes) -> str | None:
     return "\n".join(parts) if parts else None
 
 
+def privacy_safe_prompt_text(
+    body: bytes | None,
+    scanner_config: ScannerConfig | None = None,
+) -> str | None:
+    """Extract prompt text with any detected secrets already masked."""
+    if not body:
+        return None
+    redacted = redact_request_body(body, scanner_config)
+    return extract_prompt_text(redacted.body)
+
+
 @contextmanager
 def request_timer():
     start = time.perf_counter()
@@ -91,9 +103,15 @@ def log_proxy_event(
     total_tokens: int | None = None,
     estimated_cost: float | None = None,
     redaction_count: int = 0,
+    rule_ids: tuple[str, ...] = (),
 ) -> None:
-    raw_prompt = extract_prompt_text(body) if config.logging.log_raw_prompts and body else None
+    raw_prompt = None
+    if config.logging.log_raw_prompts and body:
+        # Always mask secrets before persisting — never store raw credential values.
+        raw_prompt = privacy_safe_prompt_text(body, config.scanners)
+
     raw_response = response_text if config.logging.log_raw_prompts and response_text else None
+    matched_rule_ids = ",".join(rule_ids) if rule_ids else None
 
     audit_writer.write(
         AuditEvent(
@@ -106,6 +124,7 @@ def log_proxy_event(
             output_length=output_length,
             latency_ms=latency_ms,
             policy_id=policy_id,
+            matched_rule_ids=matched_rule_ids,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
