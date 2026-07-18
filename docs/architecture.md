@@ -30,14 +30,15 @@ Upstream provider (OpenAI, Ollama, ...)
 3. **Provider selection** — the first configured provider whose `models` patterns match the requested model is chosen (`fnmatch` globs such as `gpt-*`, `llama*`).
 4. **Policy evaluation** — policies from `aiwall.yaml` are evaluated in order:
    - `block` on first match stops the request (HTTP 403).
+   - `redact` masks matched secrets in the request body, then continues.
    - `warn` is recorded but the request continues.
    - otherwise the request is allowed.
-5. **Secret scan** — regex rules run on message content before forwarding; results feed `input.contains_secret` policies.
+5. **Secret scan** — regex and entropy rules run on message content before forwarding; results feed `input.contains_secret` policies.
 6. **Cost estimate (pre-forward)** — prompt tokens and `max_tokens` hints are used to estimate cost for `estimated_cost` policy conditions.
 7. **Forward** — non-streaming: full upstream response; streaming: SSE chunks passed through to the client.
-8. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency).
+8. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency, redaction count).
 
-Blocked requests never reach the upstream provider.
+Blocked requests never reach the upstream provider. Redacted requests reach the provider with secrets masked.
 
 ## Components
 

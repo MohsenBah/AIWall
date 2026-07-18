@@ -26,7 +26,7 @@ from app.proxy.tokens import (
     extract_stream_token_usage,
     extract_token_usage,
 )
-from app.scanners.secrets import scan_request_body
+from app.scanners.secrets import redact_request_body, scan_request_body
 
 FORWARD_REQUEST_HEADERS = {
     "authorization",
@@ -55,6 +55,8 @@ def _filter_forward_headers(headers: Mapping[str, str]) -> dict[str, str]:
 
 
 def _audit_decision(policy_result: PolicyResult, upstream_ok: bool = True) -> str:
+    if policy_result.action == "redact" and upstream_ok:
+        return "redact"
     if policy_result.action == "warn":
         return "warn"
     if not upstream_ok:
@@ -63,9 +65,17 @@ def _audit_decision(policy_result: PolicyResult, upstream_ok: bool = True) -> st
 
 
 def _audit_reason(policy_result: PolicyResult, upstream_reason: str | None = None) -> str:
+    if policy_result.action == "redact":
+        return policy_result.reason or "secret-redacted"
     if policy_result.action == "warn":
         return policy_result.reason or "policy_warn"
     return upstream_reason or "proxied"
+
+
+def _policy_id_for_audit(policy_result: PolicyResult) -> str | None:
+    if policy_result.action in {"warn", "redact", "block"}:
+        return policy_result.policy_id
+    return None
 
 
 class ChatCompletionProxy:
@@ -134,23 +144,31 @@ class ChatCompletionProxy:
             )
             return policy_blocked_response(policy_result)
 
-        if _request_is_streaming(body):
+        forward_body = body
+        redaction_count = 0
+        if policy_result.action == "redact":
+            redaction = redact_request_body(body, self._config.scanners)
+            forward_body = redaction.body
+            redaction_count = redaction.redaction_count
+
+        if _request_is_streaming(forward_body):
             return await self._forward_stream(
                 request_id=request_id,
                 provider_name=provider.name,
                 model=model,
-                body=body,
+                body=forward_body,
                 input_length=input_length,
                 upstream_url=upstream_url,
                 upstream_headers=upstream_headers,
                 started=started,
                 policy_result=policy_result,
+                redaction_count=redaction_count,
             )
 
         try:
             upstream_response = await self._http_client.post(
                 upstream_url,
-                content=body,
+                content=forward_body,
                 headers=upstream_headers,
             )
         except httpx.RequestError as exc:
@@ -166,8 +184,9 @@ class ChatCompletionProxy:
                 input_length=input_length,
                 output_length=0,
                 latency_ms=latency_ms,
-                body=body,
-                policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
+                body=forward_body,
+                policy_id=_policy_id_for_audit(policy_result),
+                redaction_count=redaction_count,
             )
             raise HTTPException(
                 status_code=502,
@@ -183,7 +202,7 @@ class ChatCompletionProxy:
             "proxied" if upstream_ok else "upstream_error",
         )
         token_usage = (
-            extract_token_usage(body, upstream_response.content) if upstream_ok else None
+            extract_token_usage(forward_body, upstream_response.content) if upstream_ok else None
         )
         cost_estimate = None
         if token_usage is not None:
@@ -200,13 +219,14 @@ class ChatCompletionProxy:
             input_length=input_length,
             output_length=output_length,
             latency_ms=latency_ms,
-            body=body,
+            body=forward_body,
             response_text=upstream_response.text if upstream_ok else None,
-            policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
+            policy_id=_policy_id_for_audit(policy_result),
             prompt_tokens=token_usage.prompt_tokens if token_usage else None,
             completion_tokens=token_usage.completion_tokens if token_usage else None,
             total_tokens=token_usage.total_tokens if token_usage else None,
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
+            redaction_count=redaction_count,
         )
 
         return Response(
@@ -227,6 +247,7 @@ class ChatCompletionProxy:
         upstream_headers: dict[str, str],
         started: float,
         policy_result: PolicyResult,
+        redaction_count: int = 0,
     ) -> StreamingResponse | Response:
         upstream_request = self._http_client.build_request(
             "POST",
@@ -251,6 +272,8 @@ class ChatCompletionProxy:
                 output_length=0,
                 latency_ms=latency_ms,
                 body=body,
+                policy_id=_policy_id_for_audit(policy_result),
+                redaction_count=redaction_count,
             )
             raise HTTPException(
                 status_code=502,
@@ -272,6 +295,8 @@ class ChatCompletionProxy:
                 output_length=len(error_body),
                 latency_ms=latency_ms,
                 body=body,
+                policy_id=_policy_id_for_audit(policy_result),
+                redaction_count=redaction_count,
             )
             await upstream_response.aclose()
             return Response(
@@ -309,11 +334,12 @@ class ChatCompletionProxy:
                     latency_ms=latency_ms,
                     body=body,
                     response_text=output_bytes.decode("utf-8", errors="replace"),
-                    policy_id=policy_result.policy_id if policy_result.action == "warn" else None,
+                    policy_id=_policy_id_for_audit(policy_result),
                     prompt_tokens=token_usage.prompt_tokens,
                     completion_tokens=token_usage.completion_tokens,
                     total_tokens=token_usage.total_tokens,
                     estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
+                    redaction_count=redaction_count,
                 )
 
         return StreamingResponse(

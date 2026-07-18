@@ -16,7 +16,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | OpenAI-compatible proxy (`/v1/chat/completions`, SSE streaming) | Done (Phase 1.2) |
 | Ollama adapter + provider router | Done (Phase 1.3) |
 | Audit logging (SQLite) | Done (Phase 1.4) |
-| Policy engine (allow / warn / block) | Done (Phase 1.5) |
+| Policy engine (allow / warn / block / redact) | Done (Phase 1.5 + 2.4) |
 | Secret scanning | Done (Phase 1.6) |
 | Token counting + cost estimation | Done (Phase 1.7) |
 | Web dashboard (events, summary, HTMX filters) | Done (Phase 1.8) |
@@ -30,8 +30,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Secret scanner rule pack expansion | Done (Phase 2.1) |
 | Entropy-based secret detection | Done (Phase 2.2) |
 | False-positive tuning (allowlists) | Done (Phase 2.3) |
-| Redact matched secrets before forward | Planned (Phase 2.4) |
-| Web control panel (policy toggles, alerts) | Planned |
+| Redact matched secrets before forward | Done (Phase 2.4) |
+| Privacy-safe block responses (rule ids) | Planned (Phase 2.5) |
 
 ## What AIWall Does
 

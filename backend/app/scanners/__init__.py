@@ -2,6 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 """Secret scanning package."""
 
-from app.scanners.secrets import ScanResult, SecretMatch, SecretScanner, scan_request_body
+from app.scanners.secrets import (
+    BodyRedactionResult,
+    RedactionResult,
+    ScanResult,
+    SecretMatch,
+    SecretScanner,
+    redact_request_body,
+    scan_request_body,
+)
 
-__all__ = ["ScanResult", "SecretMatch", "SecretScanner", "scan_request_body"]
+__all__ = [
+    "BodyRedactionResult",
+    "RedactionResult",
+    "ScanResult",
+    "SecretMatch",
+    "SecretScanner",
+    "redact_request_body",
+    "scan_request_body",
+]

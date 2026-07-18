@@ -20,6 +20,11 @@ policies:
     when: input.contains_secret
     action: block
 
+  # Alternative: mask secrets and forward instead of blocking
+  # - name: redact-secrets
+  #   when: input.contains_secret
+  #   action: redact
+
   - name: warn-large-cost
     when: estimated_cost > 1.00
     action: warn

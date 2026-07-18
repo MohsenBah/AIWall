@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 
 from app.config import RuleScannerConfig, ScannerConfig
 from app.scanners.allowlist import AllowlistChecker
-from app.scanners.entropy import contains_high_entropy_string
+from app.scanners.entropy import contains_high_entropy_string, find_high_entropy_tokens
 
 
 @dataclass(frozen=True)
@@ -25,11 +26,32 @@ class ScanResult:
 
 
 @dataclass(frozen=True)
+class RedactionResult:
+    text: str
+    redaction_count: int
+    rule_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class BodyRedactionResult:
+    body: bytes
+    redaction_count: int
+    rule_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class _SecretRule:
     rule_id: str
     pattern: re.Pattern[str]
     description: str
     default_min_length: int | None = None
+
+
+@dataclass(frozen=True)
+class _RedactionSpan:
+    start: int
+    end: int
+    rule_id: str
 
 
 _SECRET_RULES = (
@@ -122,6 +144,10 @@ _SECRET_RULES = (
 )
 
 
+def _mask_for_rule(rule_id: str) -> str:
+    return f"[REDACTED:{rule_id}]"
+
+
 class SecretScanner:
     def __init__(self, config: ScannerConfig | None = None):
         self._config = config or ScannerConfig()
@@ -147,11 +173,80 @@ class SecretScanner:
             return match.group(1)
         return match.group(0)
 
+    def _match_span(self, match: re.Match[str]) -> tuple[int, int]:
+        if match.lastindex:
+            return match.span(1)
+        return match.span(0)
+
     def _is_valid_match(self, rule: _SecretRule, matched: str) -> bool:
         min_length = self._effective_min_length(rule)
         if min_length is not None and len(matched) < min_length:
             return False
         return not self._allowlist.is_allowed(matched)
+
+    def _collect_spans(self, text: str) -> list[_RedactionSpan]:
+        spans: list[_RedactionSpan] = []
+        for rule in _SECRET_RULES:
+            if not self._rule_enabled(rule.rule_id):
+                continue
+            for match in rule.pattern.finditer(text):
+                matched = self._match_value(match)
+                if not self._is_valid_match(rule, matched):
+                    continue
+                start, end = self._match_span(match)
+                spans.append(_RedactionSpan(start=start, end=end, rule_id=rule.rule_id))
+
+        entropy = self._config.entropy
+        if entropy.enabled and self._rule_enabled("high-entropy"):
+            for token in find_high_entropy_tokens(
+                text,
+                min_length=entropy.min_length,
+                threshold=entropy.threshold,
+                is_allowed=self._allowlist.is_allowed,
+            ):
+                start = 0
+                while True:
+                    index = text.find(token, start)
+                    if index < 0:
+                        break
+                    spans.append(
+                        _RedactionSpan(
+                            start=index,
+                            end=index + len(token),
+                            rule_id="high-entropy",
+                        )
+                    )
+                    start = index + len(token)
+
+        return spans
+
+    @staticmethod
+    def _apply_spans(text: str, spans: list[_RedactionSpan]) -> RedactionResult:
+        if not spans:
+            return RedactionResult(text=text, redaction_count=0)
+
+        ordered = sorted(spans, key=lambda span: (span.start, -(span.end - span.start)))
+        selected: list[_RedactionSpan] = []
+        covered_until = -1
+        for span in ordered:
+            if span.start < covered_until:
+                continue
+            selected.append(span)
+            covered_until = span.end
+
+        redacted = text
+        rule_ids: list[str] = []
+        for span in sorted(selected, key=lambda item: item.start, reverse=True):
+            redacted = redacted[: span.start] + _mask_for_rule(span.rule_id) + redacted[span.end :]
+            rule_ids.append(span.rule_id)
+
+        # rule_ids were appended in reverse order of appearance; restore document order
+        rule_ids.reverse()
+        return RedactionResult(
+            text=redacted,
+            redaction_count=len(selected),
+            rule_ids=tuple(rule_ids),
+        )
 
     def scan(self, text: str) -> ScanResult:
         if not text:
@@ -185,6 +280,11 @@ class SecretScanner:
 
         return ScanResult(contains_secret=bool(matches), matches=tuple(matches))
 
+    def redact(self, text: str) -> RedactionResult:
+        if not text:
+            return RedactionResult(text=text, redaction_count=0)
+        return self._apply_spans(text, self._collect_spans(text))
+
 
 def scan_request_body(body: bytes, scanner_config: ScannerConfig | None = None) -> ScanResult:
     from app.audit.helpers import extract_prompt_text
@@ -193,3 +293,66 @@ def scan_request_body(body: bytes, scanner_config: ScannerConfig | None = None) 
     if text is None and body:
         text = body.decode("utf-8", errors="replace")
     return SecretScanner(scanner_config).scan(text or "")
+
+
+def redact_request_body(
+    body: bytes,
+    scanner_config: ScannerConfig | None = None,
+) -> BodyRedactionResult:
+    scanner = SecretScanner(scanner_config)
+    if not body:
+        return BodyRedactionResult(body=body, redaction_count=0)
+
+    try:
+        payload = json.loads(body)
+    except json.JSONDecodeError:
+        result = scanner.redact(body.decode("utf-8", errors="replace"))
+        return BodyRedactionResult(
+            body=result.text.encode("utf-8"),
+            redaction_count=result.redaction_count,
+            rule_ids=result.rule_ids,
+        )
+
+    if not isinstance(payload, dict):
+        return BodyRedactionResult(body=body, redaction_count=0)
+
+    messages = payload.get("messages")
+    if not isinstance(messages, list):
+        return BodyRedactionResult(body=body, redaction_count=0)
+
+    total_count = 0
+    all_rule_ids: list[str] = []
+    changed = False
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if isinstance(content, str):
+            result = scanner.redact(content)
+            if result.redaction_count:
+                message["content"] = result.text
+                total_count += result.redaction_count
+                all_rule_ids.extend(result.rule_ids)
+                changed = True
+        elif isinstance(content, list):
+            for part in content:
+                if not isinstance(part, dict):
+                    continue
+                text = part.get("text")
+                if not isinstance(text, str):
+                    continue
+                result = scanner.redact(text)
+                if result.redaction_count:
+                    part["text"] = result.text
+                    total_count += result.redaction_count
+                    all_rule_ids.extend(result.rule_ids)
+                    changed = True
+
+    if not changed:
+        return BodyRedactionResult(body=body, redaction_count=0)
+
+    return BodyRedactionResult(
+        body=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        redaction_count=total_count,
+        rule_ids=tuple(all_rule_ids),
+    )
