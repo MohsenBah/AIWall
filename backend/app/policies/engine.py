@@ -49,6 +49,7 @@ class PolicyEngine:
     def evaluate(self, context: PolicyContext) -> PolicyResult:
         config = self.reload()
         block_match: PolicyResult | None = None
+        redact_match: PolicyResult | None = None
         warn_match: PolicyResult | None = None
 
         for policy in config.policies:
@@ -69,6 +70,12 @@ class PolicyEngine:
                     reason=_match_reason(policy.when),
                 )
                 break
+            if policy.action == "redact" and redact_match is None:
+                redact_match = PolicyResult(
+                    action="redact",
+                    policy_id=policy.name,
+                    reason=_match_reason(policy.when),
+                )
             if policy.action == "warn" and warn_match is None:
                 warn_match = PolicyResult(
                     action="warn",
@@ -78,6 +85,8 @@ class PolicyEngine:
 
         if block_match is not None:
             return block_match
+        if redact_match is not None:
+            return redact_match
         if warn_match is not None:
             return warn_match
         return PolicyResult(action="allow", reason="policy_allow")

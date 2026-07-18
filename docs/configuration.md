@@ -88,15 +88,16 @@ Each provider entry:
 |---|---|---|---|
 | `name` | string | yes | Policy ID in audit logs and block responses |
 | `when` | string | yes | Condition expression (see below) |
-| `action` | string | yes | `allow`, `warn`, or `block` |
+| `action` | string | yes | `allow`, `warn`, `block`, or `redact` |
 | `enabled` | boolean | `true` | Skip when `false` |
 
 **Evaluation order**
 
 1. Enabled policies are scanned in file order.
 2. First matching `block` stops immediately (HTTP 403).
-3. First matching `warn` is remembered; request continues.
-4. If no block/warn match, the request is allowed.
+3. First matching `redact` is remembered; secrets are masked and the request continues.
+4. First matching `warn` is remembered; request continues.
+5. Precedence is `block` > `redact` > `warn` > `allow`.
 
 **Supported `when` expressions**
 
@@ -209,7 +210,9 @@ The built-in scanner runs on request message content. Rules include:
 | `dotenv-secret` | `.env`-style `KEY=value` lines |
 | `high-entropy` | Long high-entropy base64/hex-like strings |
 
-Wire into policy with `when: input.contains_secret` and `action: block`.
+Wire into policy with `when: input.contains_secret` and `action: block` (or `redact` / `warn`).
+
+`action: redact` masks matched secrets in message content as `[REDACTED:<rule_id>]` before forwarding. The audit row uses `decision: redact` and stores `redaction_count`.
 
 ### Tuning false positives
 

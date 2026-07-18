@@ -90,6 +90,7 @@ def log_proxy_event(
     completion_tokens: int | None = None,
     total_tokens: int | None = None,
     estimated_cost: float | None = None,
+    redaction_count: int = 0,
 ) -> None:
     raw_prompt = extract_prompt_text(body) if config.logging.log_raw_prompts and body else None
     raw_response = response_text if config.logging.log_raw_prompts and response_text else None
@@ -109,6 +110,7 @@ def log_proxy_event(
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             estimated_cost=estimated_cost,
+            redaction_count=redaction_count,
             raw_prompt=raw_prompt,
             raw_response=raw_response,
         )

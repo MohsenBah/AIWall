@@ -30,6 +30,7 @@ class AuditEvent:
     completion_tokens: int | None = None
     total_tokens: int | None = None
     policy_id: str | None = None
+    redaction_count: int = 0
     raw_prompt: str | None = None
     raw_response: str | None = None
     timestamp: datetime | None = None
@@ -53,6 +54,10 @@ class AuditSummary:
     @property
     def block(self) -> int:
         return self.decision_counts.get("block", 0)
+
+    @property
+    def redact(self) -> int:
+        return self.decision_counts.get("redact", 0)
 
     @property
     def error(self) -> int:
@@ -81,6 +86,7 @@ class AuditWriter:
             completion_tokens=event.completion_tokens,
             total_tokens=event.total_tokens,
             policy_id=event.policy_id,
+            redaction_count=event.redaction_count,
             latency_ms=event.latency_ms,
             raw_prompt=event.raw_prompt,
             raw_response=event.raw_response,

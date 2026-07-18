@@ -47,6 +47,50 @@ def test_policy_engine_warns_without_blocking(tmp_path) -> None:
     assert result.action == "warn"
 
 
+def test_policy_engine_redacts_matching_policy(tmp_path) -> None:
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: redact-secrets
+    when: input.contains_secret
+    action: redact""",
+    )
+    engine = PolicyEngine(config_path)
+    result = engine.evaluate(
+        PolicyContext(
+            body=b"{}",
+            model="gpt-4o-mini",
+            input_length=1,
+            contains_secret=True,
+        )
+    )
+    assert result.action == "redact"
+    assert result.policy_id == "redact-secrets"
+    assert result.reason == "secret-detected"
+
+
+def test_policy_engine_block_beats_redact(tmp_path) -> None:
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: redact-secrets
+    when: input.contains_secret
+    action: redact
+  - name: block-secrets
+    when: input.contains_secret
+    action: block""",
+    )
+    engine = PolicyEngine(config_path)
+    result = engine.evaluate(
+        PolicyContext(
+            body=b"{}",
+            model="gpt-4o-mini",
+            input_length=1,
+            contains_secret=True,
+        )
+    )
+    assert result.action == "block"
+    assert result.policy_id == "block-secrets"
+
+
 def test_policy_engine_hot_reload(tmp_path) -> None:
     config_path = write_test_config(tmp_path, "")
     engine = PolicyEngine(config_path)

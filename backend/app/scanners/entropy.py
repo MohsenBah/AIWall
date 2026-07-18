@@ -39,6 +39,29 @@ def _entropy_candidates(text: str, min_length: int) -> set[str]:
     return candidates
 
 
+def _is_high_entropy(token: str, *, threshold: float, min_length: int) -> bool:
+    if shannon_entropy(token) >= threshold:
+        return True
+    normalized = shannon_entropy(token) / _charset_max_entropy(token)
+    return normalized >= 0.85 and len(token) >= min_length
+
+
+def find_high_entropy_tokens(
+    text: str,
+    *,
+    min_length: int = 20,
+    threshold: float = 4.5,
+    is_allowed: Callable[[str], bool] | None = None,
+) -> list[str]:
+    tokens: list[str] = []
+    for token in sorted(_entropy_candidates(text, min_length), key=len, reverse=True):
+        if is_allowed and is_allowed(token):
+            continue
+        if _is_high_entropy(token, threshold=threshold, min_length=min_length):
+            tokens.append(token)
+    return tokens
+
+
 def contains_high_entropy_string(
     text: str,
     *,
@@ -46,12 +69,11 @@ def contains_high_entropy_string(
     threshold: float = 4.5,
     is_allowed: Callable[[str], bool] | None = None,
 ) -> bool:
-    for token in _entropy_candidates(text, min_length):
-        if is_allowed and is_allowed(token):
-            continue
-        if shannon_entropy(token) >= threshold:
-            return True
-        normalized = shannon_entropy(token) / _charset_max_entropy(token)
-        if normalized >= 0.85 and len(token) >= min_length:
-            return True
-    return False
+    return bool(
+        find_high_entropy_tokens(
+            text,
+            min_length=min_length,
+            threshold=threshold,
+            is_allowed=is_allowed,
+        )
+    )
