@@ -19,6 +19,9 @@ def evaluate_condition(when: str, context: PolicyContext) -> bool:
     if expression == "input.contains_secret":
         return context.contains_secret
 
+    if expression == "input.contains_private_key":
+        return context.contains_private_key
+
     match = _COMPARISON.match(expression)
     if match:
         left_name, operator, raw_value = match.groups()

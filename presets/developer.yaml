@@ -1,0 +1,17 @@
+# Developer guardrail preset (Phase 2.7)
+#
+# Warn when prompts contain secrets; hard-block private keys.
+# Enable with:
+#   presets:
+#     - developer
+
+policies:
+  - name: warn-secrets
+    when: input.contains_secret
+    action: warn
+    enabled: true
+
+  - name: block-private-keys
+    when: input.contains_private_key
+    action: block
+    enabled: true

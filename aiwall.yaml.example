@@ -15,6 +15,10 @@ providers:
     base_url: http://127.0.0.1:11434
     models: ["llama*", "mistral*", "qwen*"]
 
+# Optional: load named policy presets (see presets/developer.yaml)
+# presets:
+#   - developer
+
 policies:
   - name: block-secrets
     when: input.contains_secret
