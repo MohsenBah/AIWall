@@ -19,6 +19,7 @@ from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
 from app.policies.responses import policy_blocked_response, privacy_safe_headers
+from app.presets import has_private_key_rule
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
 from app.proxy.tokens import (
@@ -115,11 +116,13 @@ class ChatCompletionProxy:
         scan_result = scan_request_body(body, self._config.scanners)
         projected_usage = estimate_request_token_usage(body)
         cost_estimate = self._cost_estimator.estimate(provider_name, model, projected_usage)
+        rule_ids = tuple(match.rule_id for match in scan_result.matches)
         context = PolicyContext(
             body=body,
             model=model,
             input_length=input_length,
             contains_secret=scan_result.contains_secret,
+            contains_private_key=has_private_key_rule(rule_ids),
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
         )
         result = self._policy_engine.evaluate(context)

@@ -82,6 +82,21 @@ Each provider entry:
 
 **Model routing** — request `model` is matched against each provider's `models` list in file order. Example: `gpt-4o-mini` matches `gpt-*` on the `openai` provider.
 
+### `presets` (list of strings)
+
+Named policy packs merged before explicit `policies`. Shipped presets:
+
+| Name | Behavior |
+|---|---|
+| `developer` | Warn on `input.contains_secret`; block on `input.contains_private_key` |
+
+```yaml
+presets:
+  - developer
+```
+
+Preset files live in `presets/` (and are also packaged under `app/presets/`). Explicit policies with the same `name` override the preset entry.
+
 ### `policies` (list)
 
 | Field | Type | Default | Description |
@@ -93,7 +108,7 @@ Each provider entry:
 
 **Evaluation order**
 
-1. Enabled policies are scanned in file order.
+1. Enabled policies are scanned in file order (presets first, then explicit policies).
 2. First matching `block` stops immediately (HTTP 403).
 3. First matching `redact` is remembered; secrets are masked and the request continues.
 4. First matching `warn` is remembered; request continues.
@@ -103,7 +118,8 @@ Each provider entry:
 
 | Expression | Meaning |
 |---|---|
-| `input.contains_secret` | Regex secret scanner found a match in the request |
+| `input.contains_secret` | Secret scanner found a match in the request |
+| `input.contains_private_key` | Matched rule is an SSH/PKCS#8/encrypted private key |
 | `input.length > N` | Total message character length (comparison operators: `>`, `<`, `>=`, `<=`, `==`) |
 | `estimated_cost > N` | Pre-request cost estimate from tokens + `prices.yaml` |
 
@@ -283,4 +299,5 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 - [Architecture](architecture.md) — request flow and components
 - [README](../README.md) — quick start
 - `aiwall.yaml.example` — local development template
+- `presets/developer.yaml` — developer guardrail policy pack
 - `deploy/examples/aiwall.docker.yaml` — Docker Compose template

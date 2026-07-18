@@ -13,4 +13,5 @@ class PolicyContext:
     model: str
     input_length: int
     contains_secret: bool = False
+    contains_private_key: bool = False
     estimated_cost: float = 0.0

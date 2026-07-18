@@ -21,8 +21,11 @@ class PolicyResult:
 
 
 def _match_reason(when: str) -> str:
-    if when.strip() == "input.contains_secret":
+    expression = when.strip()
+    if expression == "input.contains_secret":
         return "secret-detected"
+    if expression == "input.contains_private_key":
+        return "private-key-detected"
     return when
 
 

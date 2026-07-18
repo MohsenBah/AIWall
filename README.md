@@ -33,7 +33,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Redact matched secrets before forward | Done (Phase 2.4) |
 | Privacy-safe block responses (rule ids) | Done (Phase 2.5) |
 | `.env` / pasted-config heuristics | Done (Phase 2.6) |
-| Developer guardrail policy preset | Planned (Phase 2.7) |
+| Developer guardrail policy preset | Done (Phase 2.7) |
+| Secret events in dashboard detail | Planned (Phase 2.8) |
 
 ## What AIWall Does
 

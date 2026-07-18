@@ -84,6 +84,7 @@ class ScannerConfig(BaseModel):
 class AIWallConfig(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     providers: list[ProviderConfig] = Field(default_factory=list)
+    presets: list[str] = Field(default_factory=list)
     policies: list[PolicyConfig] = Field(default_factory=list)
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     pricing: PricingConfig = Field(default_factory=PricingConfig)
@@ -108,7 +109,18 @@ def load_config(path: Path | str | None = None) -> AIWallConfig:
     with config_path.open(encoding="utf-8") as config_file:
         raw: Any = yaml.safe_load(config_file) or {}
 
-    return AIWallConfig.model_validate(raw)
+    config = AIWallConfig.model_validate(raw)
+    if not config.presets:
+        return config
+
+    from app.presets import merge_preset_policies
+
+    merged_policies = merge_preset_policies(
+        config.presets,
+        config.policies,
+        config_dir=config_path.parent,
+    )
+    return config.model_copy(update={"policies": merged_policies})
 
 
 def reload_config(app_config_path: Path | str | None) -> AIWallConfig:
