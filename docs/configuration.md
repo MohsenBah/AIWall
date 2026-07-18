@@ -297,6 +297,7 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 ## See also
 
 - [Architecture](architecture.md) — request flow and components
+- [Secret scanning](secret-scanning.md) — detectors, privacy, and test corpus
 - [README](../README.md) — quick start
 - `aiwall.yaml.example` — local development template
 - `presets/developer.yaml` — developer guardrail policy pack

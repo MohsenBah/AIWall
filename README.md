@@ -8,7 +8,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 
 ## Status
 
-**Phase 1 (Community MVP) is complete.** Phase 2 adds stronger developer secret protection.
+**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning and developer protection) is complete.
 
 | Component | Status |
 |---|---|
@@ -35,7 +35,9 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | `.env` / pasted-config heuristics | Done (Phase 2.6) |
 | Developer guardrail policy preset | Done (Phase 2.7) |
 | Secret events in dashboard detail | Done (Phase 2.8) |
-| Secret scanning docs + test corpus | Planned (Phase 2.9) |
+| Secret scanning docs + test corpus | Done (Phase 2.9) |
+| Web control panel (policy toggles, alerts) | Planned |
+
 
 ## What AIWall Does
 
@@ -191,7 +193,7 @@ Clients point their base URL to AIWall:
 http://aiwall-host:8080/v1
 ```
 
-Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema and [docs/architecture.md](docs/architecture.md) for request flow.
+Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema, [docs/secret-scanning.md](docs/secret-scanning.md) for detectors, and [docs/architecture.md](docs/architecture.md) for request flow.
 
 ## Contributing
 

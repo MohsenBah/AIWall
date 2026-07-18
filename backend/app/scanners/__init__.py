@@ -9,7 +9,9 @@ from app.scanners.secrets import (
     SecretMatch,
     SecretScanner,
     redact_request_body,
+    rule_catalog,
     scan_request_body,
+    supported_rule_ids,
 )
 
 __all__ = [
@@ -19,5 +21,7 @@ __all__ = [
     "SecretMatch",
     "SecretScanner",
     "redact_request_body",
+    "rule_catalog",
     "scan_request_body",
+    "supported_rule_ids",
 ]
