@@ -56,6 +56,13 @@ class EntropyScannerConfig(BaseModel):
     threshold: float = 4.5
 
 
+class DotenvScannerConfig(BaseModel):
+    enabled: bool = True
+    min_lines: int = 2
+    min_value_length: int = 8
+    pasted_file_min_lines: int = 5
+
+
 class RuleScannerConfig(BaseModel):
     enabled: bool = True
     min_length: int | None = None
@@ -68,6 +75,7 @@ class ScannerAllowlistConfig(BaseModel):
 
 class ScannerConfig(BaseModel):
     entropy: EntropyScannerConfig = Field(default_factory=EntropyScannerConfig)
+    dotenv: DotenvScannerConfig = Field(default_factory=DotenvScannerConfig)
     ignore_examples: bool = True
     allowlist: ScannerAllowlistConfig = Field(default_factory=ScannerAllowlistConfig)
     rules: dict[str, RuleScannerConfig] = Field(default_factory=dict)
