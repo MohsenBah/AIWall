@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from app.config import RuleScannerConfig, ScannerConfig
 from app.scanners.allowlist import AllowlistChecker
+from app.scanners.dotenv import detect_dotenv_block
 from app.scanners.entropy import contains_high_entropy_string, find_high_entropy_tokens
 
 
@@ -17,6 +18,7 @@ from app.scanners.entropy import contains_high_entropy_string, find_high_entropy
 class SecretMatch:
     rule_id: str
     description: str
+    count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -135,12 +137,6 @@ _SECRET_RULES = (
         "Generic API key assignment",
         16,
     ),
-    _SecretRule(
-        "dotenv-secret",
-        re.compile(r"(?m)^([A-Z][A-Z0-9_]{2,}=(?:['\"]?)[^\s'\"]{8,})"),
-        "Environment variable secret",
-        12,
-    ),
 )
 
 
@@ -195,6 +191,25 @@ class SecretScanner:
                     continue
                 start, end = self._match_span(match)
                 spans.append(_RedactionSpan(start=start, end=end, rule_id=rule.rule_id))
+
+        dotenv = self._config.dotenv
+        if dotenv.enabled and self._rule_enabled("dotenv-secret"):
+            detection = detect_dotenv_block(
+                text,
+                min_lines=dotenv.min_lines,
+                min_value_length=dotenv.min_value_length,
+                pasted_file_min_lines=dotenv.pasted_file_min_lines,
+            )
+            for line in detection.lines:
+                if self._allowlist.is_allowed(line.value):
+                    continue
+                spans.append(
+                    _RedactionSpan(
+                        start=line.start,
+                        end=line.end,
+                        rule_id="dotenv-secret",
+                    )
+                )
 
         entropy = self._config.entropy
         if entropy.enabled and self._rule_enabled("high-entropy"):
@@ -262,6 +277,30 @@ class SecretScanner:
                     continue
                 matches.append(SecretMatch(rule_id=rule.rule_id, description=rule.description))
                 break
+
+        dotenv = self._config.dotenv
+        if dotenv.enabled and self._rule_enabled("dotenv-secret"):
+            detection = detect_dotenv_block(
+                text,
+                min_lines=dotenv.min_lines,
+                min_value_length=dotenv.min_value_length,
+                pasted_file_min_lines=dotenv.pasted_file_min_lines,
+            )
+            if detection.detected:
+                allowed_lines = [
+                    line
+                    for line in detection.lines
+                    if not self._allowlist.is_allowed(line.value)
+                ]
+                if allowed_lines:
+                    count = len(allowed_lines)
+                    matches.append(
+                        SecretMatch(
+                            rule_id="dotenv-secret",
+                            description=f"Pasted .env / credential file ({count} assignments)",
+                            count=count,
+                        )
+                    )
 
         entropy = self._config.entropy
         if entropy.enabled and self._rule_enabled("high-entropy"):

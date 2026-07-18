@@ -139,6 +139,10 @@ Cost-based policies use a pre-forward estimate (prompt tokens + `max_tokens` / `
 | `entropy.enabled` | boolean | `true` | Detect high-entropy base64/hex-like strings |
 | `entropy.min_length` | integer | `20` | Minimum candidate token length |
 | `entropy.threshold` | float | `4.5` | Shannon entropy threshold (bits per character) |
+| `dotenv.enabled` | boolean | `true` | Detect pasted `.env` bodies and credential dumps |
+| `dotenv.min_lines` | integer | `2` | Minimum dotenv-style `KEY=value` lines to treat as a block |
+| `dotenv.min_value_length` | integer | `8` | Minimum value length for dotenv/assignment lines |
+| `dotenv.pasted_file_min_lines` | integer | `5` | Minimum assignment lines for large pasted config dumps |
 | `allowlist.literals` | list of strings | `[]` | Exact matched values to ignore |
 | `allowlist.patterns` | list of strings | `[]` | Regex patterns; matched secret substrings that match are ignored |
 | `rules.<rule_id>.enabled` | boolean | `true` | Enable or disable a specific detector (including `high-entropy`) |
@@ -207,7 +211,7 @@ The built-in scanner runs on request message content. Rules include:
 | `encrypted-private-key` | Encrypted PEM private keys |
 | `jwt` | JSON Web Token shape |
 | `generic-api-key` | `api_key=…`, `secret_key=…`, etc. |
-| `dotenv-secret` | `.env`-style `KEY=value` lines |
+| `dotenv-secret` | Pasted `.env` bodies / credential dumps (includes assignment `count`) |
 | `high-entropy` | Long high-entropy base64/hex-like strings |
 
 Wire into policy with `when: input.contains_secret` and `action: block` (or `redact` / `warn`).

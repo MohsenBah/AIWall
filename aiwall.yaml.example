@@ -43,6 +43,11 @@ scanners:
     enabled: true
     min_length: 20
     threshold: 4.5
+  dotenv:
+    enabled: true
+    min_lines: 2
+    min_value_length: 8
+    pasted_file_min_lines: 5
   allowlist:
     literals: []
     patterns: []
