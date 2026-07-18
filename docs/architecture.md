@@ -62,6 +62,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards and recent events |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
+| `/partials/events/{id}/detail` | GET | HTMX fragment for privacy-safe event detail (rule ids, reason) |
 | `/static/*` | GET | Dashboard CSS |
 
 Clients should set their OpenAI base URL to:

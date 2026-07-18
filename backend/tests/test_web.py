@@ -65,6 +65,59 @@ async def test_dashboard_lists_recent_events(tmp_path, upstream_mock_handler) ->
 
 
 @pytest.mark.asyncio
+async def test_dashboard_secret_event_detail_shows_rule_id_not_secret(
+    tmp_path, upstream_mock_handler
+) -> None:
+    import httpx
+
+    from app.main import create_app
+    from tests.conftest import write_test_config
+    from tests.test_secret_scanner import _random_aws_key
+
+    config_path = write_test_config(
+        tmp_path,
+        """  - name: block-secrets
+    when: input.contains_secret
+    action: block""",
+    )
+    mock_transport = httpx.MockTransport(upstream_mock_handler)
+    http_client = httpx.AsyncClient(transport=mock_transport)
+    app = create_app(config_path=config_path, http_client=http_client)
+
+    secret = _random_aws_key()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        blocked = await client.post(
+            "/v1/chat/completions",
+            json={
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "user", "content": f"my aws key is {secret}"}],
+            },
+        )
+        assert blocked.status_code == 403
+
+        dashboard = await client.get("/")
+        assert dashboard.status_code == 200
+        assert "aws-access-key" in dashboard.text
+        assert "secret-detected" in dashboard.text
+        assert secret not in dashboard.text
+        assert "rule-chip" in dashboard.text
+
+        rows = app.state.audit_writer.list_recent(limit=1)
+        event_id = rows[0].id
+        detail = await client.get(f"/partials/events/{event_id}/detail")
+
+    assert detail.status_code == 200
+    assert "aws-access-key" in detail.text
+    assert "secret-detected" in detail.text
+    assert "block-secrets" in detail.text
+    assert "Secret values are never shown" in detail.text
+    assert secret not in detail.text
+    assert "raw_prompt" not in detail.text
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
 async def test_events_partial_filters_without_full_page(tmp_path, upstream_mock_handler) -> None:
     import httpx
 
