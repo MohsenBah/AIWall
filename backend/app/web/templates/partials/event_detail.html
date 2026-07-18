@@ -1,0 +1,39 @@
+<div class="event-detail" data-event-id="{{ event.id }}">
+    <dl class="detail-grid">
+        <div>
+            <dt>Request ID</dt>
+            <dd class="mono">{{ event.request_id }}</dd>
+        </div>
+        <div>
+            <dt>Decision</dt>
+            <dd><span class="badge badge-{{ event.decision }}">{{ event.decision }}</span></dd>
+        </div>
+        <div>
+            <dt>Reason</dt>
+            <dd>{{ event.reason or '-' }}</dd>
+        </div>
+        <div>
+            <dt>Policy</dt>
+            <dd class="mono">{{ event.policy_id or '-' }}</dd>
+        </div>
+        <div class="detail-span">
+            <dt>Matched rules</dt>
+            <dd class="rules">
+                {% if rule_ids %}
+                    {% for rule_id in rule_ids %}
+                    <span class="rule-chip">{{ rule_id }}</span>
+                    {% endfor %}
+                {% else %}
+                <span class="muted">None</span>
+                {% endif %}
+            </dd>
+        </div>
+        {% if event.redaction_count %}
+        <div>
+            <dt>Redactions</dt>
+            <dd>{{ event.redaction_count }}</dd>
+        </div>
+        {% endif %}
+    </dl>
+    <p class="privacy-note muted">Secret values are never shown in the dashboard.</p>
+</div>

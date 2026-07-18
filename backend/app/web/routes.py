@@ -6,10 +6,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
+from app.web.privacy import event_detail_context
 
 WEB_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = WEB_DIR / "templates"
@@ -89,6 +91,18 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 "selected_decision": selected_decision,
                 "selected_provider": selected_provider,
             },
+        )
+
+    @router.get("/partials/events/{event_id}/detail", response_class=HTMLResponse)
+    async def event_detail_partial(request: Request, event_id: int) -> HTMLResponse:
+        audit_writer = request.app.state.audit_writer
+        event = audit_writer.get_by_id(event_id)
+        if event is None:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return templates.TemplateResponse(
+            request,
+            "partials/event_detail.html",
+            event_detail_context(event),
         )
 
     return router

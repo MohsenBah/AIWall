@@ -116,6 +116,13 @@ class AuditWriter:
                 stmt = stmt.where(AuditEventRow.provider == provider)
             return list(session.scalars(stmt).all())
 
+    def get_by_id(self, event_id: int) -> AuditEventRow | None:
+        from sqlalchemy import select
+
+        with self._session_factory() as session:
+            stmt = select(AuditEventRow).where(AuditEventRow.id == event_id)
+            return session.scalars(stmt).first()
+
     def list_providers(self) -> list[str]:
         from sqlalchemy import select
 
