@@ -104,6 +104,7 @@ def log_proxy_event(
     estimated_cost: float | None = None,
     redaction_count: int = 0,
     rule_ids: tuple[str, ...] = (),
+    user_id: str | None = None,
 ) -> None:
     raw_prompt = None
     if config.logging.log_raw_prompts and body:
@@ -116,6 +117,7 @@ def log_proxy_event(
     audit_writer.write(
         AuditEvent(
             request_id=request_id,
+            user_id=user_id,
             provider=provider_name,
             model=model,
             decision=decision,

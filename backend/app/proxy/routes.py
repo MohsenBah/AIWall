@@ -15,7 +15,12 @@ router = APIRouter(prefix="/v1", tags=["openai-compatible"])
 
 @router.get("/models")
 async def models(request: Request) -> dict[str, object]:
-    validate_gateway_auth(request.app.state.config, request)
+    identity = validate_gateway_auth(
+        request.app.state.config,
+        request,
+        getattr(request.app.state, "profile_store", None),
+    )
+    request.state.gateway_identity = identity
     return await list_models(
         request.app.state.config,
         request.app.state.http_client,
@@ -25,7 +30,12 @@ async def models(request: Request) -> dict[str, object]:
 
 @router.post("/chat/completions")
 async def chat_completions(request: Request):
-    validate_gateway_auth(request.app.state.config, request)
+    identity = validate_gateway_auth(
+        request.app.state.config,
+        request,
+        getattr(request.app.state, "profile_store", None),
+    )
+    request.state.gateway_identity = identity
     proxy = ChatCompletionProxy(
         request.app.state.config,
         request.app.state.http_client,

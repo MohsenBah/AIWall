@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
-from app.auth.gateway import gateway_auth_enabled, strip_client_authorization
+from app.auth.gateway import GatewayIdentity, gateway_auth_enabled, strip_client_authorization
 from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
@@ -91,6 +91,18 @@ def _with_rule_ids(result: PolicyResult, scan_result: ScanResult) -> PolicyResul
     )
 
 
+def _identity_from_request(request: Request) -> GatewayIdentity:
+    identity = getattr(request.state, "gateway_identity", None)
+    if isinstance(identity, GatewayIdentity):
+        return identity
+    return GatewayIdentity()
+
+
+def _should_strip_client_auth(config: AIWallConfig, identity: GatewayIdentity) -> bool:
+    # Strip AIWall keys so they never reach upstream providers.
+    return gateway_auth_enabled(config) or identity.profile_id is not None
+
+
 class ChatCompletionProxy:
     def __init__(
         self,
@@ -133,8 +145,10 @@ class ChatCompletionProxy:
         model = extract_model_from_body(body)
         provider = select_provider(self._config, model)
         upstream_url = build_chat_completions_url(provider)
+        identity = _identity_from_request(request)
+        user_id = identity.user_id
         incoming_headers = _filter_forward_headers(request.headers)
-        if gateway_auth_enabled(self._config):
+        if _should_strip_client_auth(self._config, identity):
             incoming_headers = strip_client_authorization(incoming_headers)
         upstream_headers = build_upstream_headers(provider, incoming_headers)
         request_id = new_request_id()
@@ -158,6 +172,7 @@ class ChatCompletionProxy:
                 body=body,
                 policy_id=policy_result.policy_id,
                 rule_ids=policy_result.rule_ids,
+                user_id=user_id,
             )
             return policy_blocked_response(policy_result)
 
@@ -190,6 +205,7 @@ class ChatCompletionProxy:
                 policy_result=policy_result,
                 redaction_count=redaction_count,
                 extra_headers=response_headers,
+                user_id=user_id,
             )
 
         try:
@@ -215,6 +231,7 @@ class ChatCompletionProxy:
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
+                user_id=user_id,
             )
             raise HTTPException(
                 status_code=502,
@@ -256,6 +273,7 @@ class ChatCompletionProxy:
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
             redaction_count=redaction_count,
             rule_ids=policy_result.rule_ids,
+            user_id=user_id,
         )
 
         return Response(
@@ -279,6 +297,7 @@ class ChatCompletionProxy:
         policy_result: PolicyResult,
         redaction_count: int = 0,
         extra_headers: dict[str, str] | None = None,
+        user_id: str | None = None,
     ) -> StreamingResponse | Response:
         upstream_request = self._http_client.build_request(
             "POST",
@@ -306,6 +325,7 @@ class ChatCompletionProxy:
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
+                user_id=user_id,
             )
             raise HTTPException(
                 status_code=502,
@@ -330,6 +350,7 @@ class ChatCompletionProxy:
                 policy_id=_policy_id_for_audit(policy_result),
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
+                user_id=user_id,
             )
             await upstream_response.aclose()
             return Response(
@@ -375,6 +396,7 @@ class ChatCompletionProxy:
                     estimated_cost=cost_estimate.estimated_cost if cost_estimate else None,
                     redaction_count=redaction_count,
                     rule_ids=policy_result.rule_ids,
+                    user_id=user_id,
                 )
 
         return StreamingResponse(

@@ -190,9 +190,16 @@ Costs are USD per million tokens. Unknown models return `null` estimated cost in
 | `enabled` | boolean | `false` | Require a client API key before proxying `/v1/*` routes |
 | `api_key_env` | string | `AIWALL_API_KEY` | Environment variable holding the expected client key |
 
-When enabled, clients must send `Authorization: Bearer <AIWALL_API_KEY>`. The gateway validates this key and does **not** forward it upstream; provider keys still come from each provider's `api_key_env` (e.g. `OPENAI_API_KEY`).
+When enabled, clients must send `Authorization: Bearer <key>` where `<key>` is either:
 
-Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN.
+- the shared admin key from `AIWALL_API_KEY`, or
+- a per-profile key issued via `ProfileStore.issue_api_key()` (prefix `aiwall_pk_`)
+
+The gateway validates the key and does **not** forward it upstream; provider keys still come from each provider's `api_key_env` (e.g. `OPENAI_API_KEY`).
+
+Profile keys are stored as SHA-256 hashes only. A successful profile-authenticated request sets audit `user_id` to the profile id.
+
+Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN. Even with auth disabled, presenting a valid profile key still attributes the request to that profile.
 
 ## Environment variables
 
@@ -201,7 +208,7 @@ Leave disabled for trusted localhost / homelab networks. Enable when exposing AI
 | `AIWALL_CONFIG` | `aiwall.yaml` | Path to configuration file |
 | `AIWALL_PORT` | `8080` | HTTP listen port |
 | `OPENAI_API_KEY` | _(unset)_ | Used when a provider sets `api_key_env: OPENAI_API_KEY` |
-| `AIWALL_API_KEY` | _(unset)_ | Client key checked when `gateway_auth.enabled: true` |
+| `AIWALL_API_KEY` | _(unset)_ | Shared admin client key when `gateway_auth.enabled: true` (profile keys also accepted) |
 | `OLLAMA_PORT` | `11434` | Host port for Ollama in Docker Compose (`--profile ollama`) |
 
 Provider-specific keys are read from the environment variable named in `api_key_env`.
