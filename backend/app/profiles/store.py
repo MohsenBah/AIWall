@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import hashlib
+import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -214,3 +215,13 @@ class ProfileStore:
             session.delete(row)
             session.commit()
             return True
+
+    def issue_api_key(self, profile_id: int) -> str:
+        """Generate a new API key for a profile.
+
+        Returns the plaintext key once. Only the SHA-256 hash is stored.
+        """
+        plaintext = "aiwall_pk_" + secrets.token_urlsafe(32)
+        key_hash = hash_api_key(plaintext)
+        self.update(profile_id, api_key_hash=key_hash)
+        return plaintext

@@ -117,6 +117,16 @@ def test_profile_roles_include_family_defaults() -> None:
     assert {"adult", "child", "developer", "guest"} <= PROFILE_ROLES
 
 
+def test_issue_api_key_stores_hash_only(profile_store: ProfileStore) -> None:
+    profile = profile_store.create(name="KeyUser", role="adult")
+    plaintext = profile_store.issue_api_key(profile.id)
+    assert plaintext.startswith("aiwall_pk_")
+    stored = profile_store.get(profile.id)
+    assert stored is not None
+    assert stored.api_key_hash == hash_api_key(plaintext)
+    assert plaintext not in (stored.api_key_hash or "")
+
+
 @pytest.mark.asyncio
 async def test_app_exposes_profile_store(tmp_path: Path) -> None:
     import httpx

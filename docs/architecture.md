@@ -26,17 +26,18 @@ Upstream provider (OpenAI, Ollama, ...)
 ## Request flow
 
 1. **Ingress** — `POST /v1/chat/completions` receives the request body and headers (including `Authorization` when present).
-2. **Model extraction** — the `model` field is parsed from the JSON body.
-3. **Provider selection** — the first configured provider whose `models` patterns match the requested model is chosen (`fnmatch` globs such as `gpt-*`, `llama*`).
-4. **Policy evaluation** — policies from `aiwall.yaml` are evaluated in order:
+2. **Gateway auth** — optional: validate shared `AIWALL_API_KEY` or a per-profile key; profile keys set audit `user_id`.
+3. **Model extraction** — the `model` field is parsed from the JSON body.
+4. **Provider selection** — the first configured provider whose `models` patterns match the requested model is chosen (`fnmatch` globs such as `gpt-*`, `llama*`).
+5. **Policy evaluation** — policies from `aiwall.yaml` are evaluated in order:
    - `block` on first match stops the request (HTTP 403).
    - `redact` masks matched secrets in the request body, then continues.
    - `warn` is recorded but the request continues.
    - otherwise the request is allowed.
-5. **Secret scan** — regex and entropy rules run on message content before forwarding; results feed `input.contains_secret` policies.
-6. **Cost estimate (pre-forward)** — prompt tokens and `max_tokens` hints are used to estimate cost for `estimated_cost` policy conditions.
-7. **Forward** — non-streaming: full upstream response; streaming: SSE chunks passed through to the client.
-8. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency, redaction count).
+6. **Secret scan** — regex and entropy rules run on message content before forwarding; results feed `input.contains_secret` policies.
+7. **Cost estimate (pre-forward)** — prompt tokens and `max_tokens` hints are used to estimate cost for `estimated_cost` policy conditions.
+8. **Forward** — non-streaming: full upstream response; streaming: SSE chunks passed through to the client.
+9. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency, redaction count, `user_id`).
 
 Blocked requests never reach the upstream provider. Redacted requests reach the provider with secrets masked.
 
@@ -47,6 +48,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/proxy/` | OpenAI-compatible forwarding, token/cost accounting |
 | `app/policies/` | YAML policy engine with hot reload on each request |
 | `app/scanners/` | Regex and entropy-based secret detection |
+| `app/auth/` | Gateway auth: shared admin key and per-profile API keys |
 | `app/profiles/` | Family/user profile model and CRUD storage |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
