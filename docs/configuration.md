@@ -89,6 +89,7 @@ Named policy packs merged before explicit `policies`. Shipped presets:
 | Name | Behavior |
 |---|---|
 | `developer` | Warn on `input.contains_secret`; block on `input.contains_private_key` |
+| `child` | For `user.role == "child"`: block `explicit`/`unsafe`/`violence` categories; hard-block secrets and private keys |
 
 ```yaml
 presets:
@@ -121,16 +122,27 @@ Preset files live in `presets/` (and are also packaged under `app/presets/`). Ex
 | `input.contains_secret` | Secret scanner found a match in the request |
 | `input.contains_private_key` | Matched rule is an SSH/PKCS#8/encrypted private key |
 | `user.role == "child"` | Authenticated profile role equals `child` (also `!=`) |
+| `input.category == "explicit"` | Prompt classified into a content category |
+| `input.category in ["unsafe", "explicit"]` | Prompt matches any listed category |
 | `input.length > N` | Total message character length (comparison operators: `>`, `<`, `>=`, `<=`, `==`) |
 | `estimated_cost > N` | Pre-request cost estimate from tokens + `prices.yaml` |
 
 Combine atoms with `and`, for example:
 
 ```yaml
-when: user.role == "child" and input.contains_secret
+when: user.role == "child" and input.category in ["explicit", "unsafe"]
 ```
 
 `user.role` is set from the profile that owns the Bearer API key. Requests without a profile identity (shared admin key or no auth) have no role, so role conditions do not match.
+
+Built-in categories (keyword classifier): `explicit`, `violence`, `unsafe`.
+
+Named presets:
+
+| Preset | Purpose |
+|---|---|
+| `developer` | Warn on secrets; block private keys |
+| `child` | Block risky categories for children; hard-block secrets/private keys for child roles |
 
 Examples:
 
@@ -207,6 +219,20 @@ When enabled, clients must send `Authorization: Bearer <key>` where `<key>` is e
 The gateway validates the key and does **not** forward it upstream; provider keys still come from each provider's `api_key_env` (e.g. `OPENAI_API_KEY`).
 
 Profile keys are stored as SHA-256 hashes only. A successful profile-authenticated request sets audit `user_id` to the profile id.
+
+### Daily usage limits
+
+Profiles may set optional daily caps:
+
+| Field | Unit | Behavior |
+|---|---|---|
+| `daily_request_limit` | count | Block after this many billable requests today |
+| `daily_token_limit` | tokens | Block when today's tokens (plus projected request) would exceed the cap |
+| `daily_cost_limit` | USD | Block when today's estimated cost (plus projected request) would exceed the cap |
+
+`None` / unset means no cap. Billable decisions are `allow`, `warn`, and `redact` (policy blocks and upstream errors do not consume the request quota).
+
+The reset window is the **UTC calendar day** (midnight UTC). Over-limit requests return HTTP 403 with `error.reason` / `error.policy` set to `daily-limit`.
 
 Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN. Even with auth disabled, presenting a valid profile key still attributes the request to that profile.
 

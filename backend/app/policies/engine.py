@@ -26,6 +26,8 @@ def _match_reason(when: str) -> str:
         return "secret-detected"
     if expression == "input.contains_private_key":
         return "private-key-detected"
+    if "input.category" in expression:
+        return "category-blocked"
     if "user.role" in expression:
         return "role-policy"
     return when

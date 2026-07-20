@@ -65,6 +65,13 @@ class AuditSummary:
         return self.decision_counts.get("error", 0)
 
 
+@dataclass(frozen=True)
+class ProfileUsage:
+    request_count: int = 0
+    total_tokens: int = 0
+    estimated_cost: float = 0.0
+
+
 class AuditWriter:
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -152,4 +159,41 @@ class AuditWriter:
             total=sum(decision_counts.values()),
             decision_counts=decision_counts,
             total_estimated_cost=float(total_cost or 0.0),
+        )
+
+    def usage_for_user(
+        self,
+        user_id: str,
+        *,
+        since: datetime,
+        decisions: frozenset[str] | set[str] | None = None,
+    ) -> ProfileUsage:
+        """Aggregate billable usage for a profile since ``since`` (UTC)."""
+        from sqlalchemy import func, select
+
+        with self._session_factory() as session:
+            filters = [
+                AuditEventRow.user_id == user_id,
+                AuditEventRow.timestamp >= since,
+            ]
+            if decisions is not None:
+                filters.append(AuditEventRow.decision.in_(tuple(decisions)))
+
+            count_stmt = select(func.count()).select_from(AuditEventRow).where(*filters)
+            request_count = int(session.execute(count_stmt).scalar_one() or 0)
+
+            tokens_stmt = select(
+                func.coalesce(func.sum(AuditEventRow.total_tokens), 0)
+            ).where(*filters)
+            total_tokens = int(session.execute(tokens_stmt).scalar_one() or 0)
+
+            cost_stmt = select(
+                func.coalesce(func.sum(AuditEventRow.estimated_cost), 0.0)
+            ).where(*filters)
+            estimated_cost = float(session.execute(cost_stmt).scalar_one() or 0.0)
+
+        return ProfileUsage(
+            request_count=request_count,
+            total_tokens=total_tokens,
+            estimated_cost=estimated_cost,
         )

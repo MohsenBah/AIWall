@@ -1,0 +1,22 @@
+# Child / family guardrail preset (Phase 3.4)
+#
+# Category filters and stricter secret blocks for child profiles.
+# Enable with:
+#   presets:
+#     - child
+
+policies:
+  - name: block-child-categories
+    when: user.role == "child" and input.category in ["explicit", "unsafe", "violence"]
+    action: block
+    enabled: true
+
+  - name: block-child-secrets
+    when: user.role == "child" and input.contains_secret
+    action: block
+    enabled: true
+
+  - name: block-child-private-keys
+    when: user.role == "child" and input.contains_private_key
+    action: block
+    enabled: true

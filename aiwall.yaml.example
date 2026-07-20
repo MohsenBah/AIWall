@@ -15,9 +15,10 @@ providers:
     base_url: http://127.0.0.1:11434
     models: ["llama*", "mistral*", "qwen*"]
 
-# Optional: load named policy presets (see presets/developer.yaml)
+# Optional: load named policy presets (see presets/developer.yaml, presets/child.yaml)
 # presets:
 #   - developer
+#   - child
 
 policies:
   - name: block-secrets

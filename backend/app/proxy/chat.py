@@ -15,11 +15,14 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
 from app.auth.gateway import GatewayIdentity, gateway_auth_enabled, strip_client_authorization
+from app.classifiers.categories import classify_request_body
 from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
 from app.policies.responses import policy_blocked_response, privacy_safe_headers
 from app.presets import has_private_key_rule
+from app.profiles.limits import check_daily_limits
+from app.profiles.store import ProfileStore
 from app.providers.adapters import build_chat_completions_url, build_upstream_headers
 from app.providers.router import extract_model_from_body, select_provider
 from app.proxy.tokens import (
@@ -111,12 +114,14 @@ class ChatCompletionProxy:
         audit_writer: AuditWriter,
         policy_engine: PolicyEngine,
         cost_estimator,
+        profile_store: ProfileStore | None = None,
     ):
         self._config = config
         self._http_client = http_client
         self._audit_writer = audit_writer
         self._policy_engine = policy_engine
         self._cost_estimator = cost_estimator
+        self._profile_store = profile_store
 
     def _evaluate_policy(
         self,
@@ -129,6 +134,7 @@ class ChatCompletionProxy:
         user_id: str | None = None,
     ) -> PolicyResult:
         scan_result = scan_request_body(body, self._config.scanners)
+        category_result = classify_request_body(body)
         projected_usage = estimate_request_token_usage(body)
         cost_estimate = self._cost_estimator.estimate(provider_name, model, projected_usage)
         rule_ids = tuple(match.rule_id for match in scan_result.matches)
@@ -141,6 +147,8 @@ class ChatCompletionProxy:
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
             user_role=user_role,
             user_id=user_id,
+            categories=category_result.categories,
+            category=category_result.primary,
         )
         result = self._policy_engine.evaluate(context)
         return _with_rule_ids(result, scan_result)
@@ -187,6 +195,37 @@ class ChatCompletionProxy:
                 user_id=user_id,
             )
             return policy_blocked_response(policy_result)
+
+        if self._profile_store is not None and identity.profile_id is not None:
+            projected_usage = estimate_request_token_usage(body)
+            cost_estimate = self._cost_estimator.estimate(
+                provider.name, model, projected_usage
+            )
+            limit_check = check_daily_limits(
+                profile_store=self._profile_store,
+                audit_writer=self._audit_writer,
+                profile_id=identity.profile_id,
+                projected_tokens=projected_usage.total_tokens,
+                projected_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
+            )
+            if limit_check.exceeded and limit_check.result is not None:
+                latency_ms = (time.perf_counter() - started) * 1000.0
+                log_proxy_event(
+                    self._audit_writer,
+                    self._config,
+                    request_id=request_id,
+                    provider_name=provider.name,
+                    model=model,
+                    decision="block",
+                    reason=limit_check.result.reason,
+                    input_length=input_length,
+                    output_length=0,
+                    latency_ms=latency_ms,
+                    body=body,
+                    policy_id=limit_check.result.policy_id,
+                    user_id=user_id,
+                )
+                return policy_blocked_response(limit_check.result)
 
         forward_body = body
         redaction_count = 0

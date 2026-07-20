@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -17,3 +17,5 @@ class PolicyContext:
     estimated_cost: float = 0.0
     user_role: str | None = None
     user_id: str | None = None
+    categories: frozenset[str] = field(default_factory=frozenset)
+    category: str | None = None

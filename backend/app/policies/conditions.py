@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 
 from app.policies.context import PolicyContext
@@ -13,6 +14,12 @@ _COMPARISON = re.compile(
 )
 _USER_ROLE = re.compile(
     r'^user\.role\s*(==|!=)\s*["\']([^"\']+)["\']$'
+)
+_CATEGORY_EQ = re.compile(
+    r'^input\.category\s*(==|!=)\s*["\']([^"\']+)["\']$'
+)
+_CATEGORY_IN = re.compile(
+    r"^input\.category\s+in\s+(\[[^\]]*\])$"
 )
 _AND_SPLIT = re.compile(r"\s+and\s+", flags=re.IGNORECASE)
 
@@ -43,6 +50,21 @@ def _evaluate_atomic(expression: str, context: PolicyContext) -> bool:
             return actual == expected
         return actual != expected
 
+    category_eq = _CATEGORY_EQ.match(expression)
+    if category_eq:
+        operator, expected = category_eq.groups()
+        matched = expected in context.categories or context.category == expected
+        if operator == "==":
+            return matched
+        return not matched
+
+    category_in = _CATEGORY_IN.match(expression)
+    if category_in:
+        values = _parse_string_list(category_in.group(1))
+        return bool(context.categories.intersection(values)) or (
+            context.category in values if context.category else False
+        )
+
     match = _COMPARISON.match(expression)
     if match:
         left_name, operator, raw_value = match.groups()
@@ -55,6 +77,16 @@ def _evaluate_atomic(expression: str, context: PolicyContext) -> bool:
         return _compare(left_value, operator, right_value)
 
     raise ValueError(f"Unsupported policy condition: {expression}")
+
+
+def _parse_string_list(raw: str) -> set[str]:
+    try:
+        parsed = ast.literal_eval(raw)
+    except (SyntaxError, ValueError) as exc:
+        raise ValueError(f"Invalid category list: {raw}") from exc
+    if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
+        raise ValueError(f"Invalid category list: {raw}")
+    return set(parsed)
 
 
 def _compare(left: float, operator: str, right: float) -> bool:
