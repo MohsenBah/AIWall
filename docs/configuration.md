@@ -120,8 +120,17 @@ Preset files live in `presets/` (and are also packaged under `app/presets/`). Ex
 |---|---|
 | `input.contains_secret` | Secret scanner found a match in the request |
 | `input.contains_private_key` | Matched rule is an SSH/PKCS#8/encrypted private key |
+| `user.role == "child"` | Authenticated profile role equals `child` (also `!=`) |
 | `input.length > N` | Total message character length (comparison operators: `>`, `<`, `>=`, `<=`, `==`) |
 | `estimated_cost > N` | Pre-request cost estimate from tokens + `prices.yaml` |
+
+Combine atoms with `and`, for example:
+
+```yaml
+when: user.role == "child" and input.contains_secret
+```
+
+`user.role` is set from the profile that owns the Bearer API key. Requests without a profile identity (shared admin key or no auth) have no role, so role conditions do not match.
 
 Examples:
 
