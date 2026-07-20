@@ -47,6 +47,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/proxy/` | OpenAI-compatible forwarding, token/cost accounting |
 | `app/policies/` | YAML policy engine with hot reload on each request |
 | `app/scanners/` | Regex and entropy-based secret detection |
+| `app/profiles/` | Family/user profile model and CRUD storage |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
 | `app/storage/` | Database engine and schema migrations |
