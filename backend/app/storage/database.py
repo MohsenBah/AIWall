@@ -44,8 +44,38 @@ def create_engine_from_config(config: AIWallConfig) -> Engine:
 
 
 def init_db(engine: Engine) -> None:
+    # Import models so create_all registers every table on Base.metadata.
+    from app.profiles import models as _profile_models  # noqa: F401
+
     Base.metadata.create_all(engine)
     _migrate_audit_schema(engine)
+    _ensure_profiles_table(engine)
+
+
+def _migrate_audit_schema(engine: Engine) -> None:
+    columns = {
+        "prompt_tokens": "INTEGER",
+        "completion_tokens": "INTEGER",
+        "total_tokens": "INTEGER",
+        "redaction_count": "INTEGER DEFAULT 0",
+        "matched_rule_ids": "TEXT",
+    }
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.execute(text("PRAGMA table_info(audit_events)"))}
+        for name, col_type in columns.items():
+            if name not in existing:
+                conn.execute(text(f"ALTER TABLE audit_events ADD COLUMN {name} {col_type}"))
+        conn.commit()
+
+
+def _ensure_profiles_table(engine: Engine) -> None:
+    """Create profiles table on existing databases that predate Phase 3.1."""
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        tables = {row[0] for row in rows}
+        if "profiles" in tables:
+            return
+    Base.metadata.create_all(engine, tables=[Base.metadata.tables["profiles"]])
 
 
 def _migrate_audit_schema(engine: Engine) -> None:

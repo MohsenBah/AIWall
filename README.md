@@ -8,7 +8,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 
 ## Status
 
-**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning and developer protection) is complete.
+**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning) is complete. Phase 3 adds family-mode profiles.
 
 | Component | Status |
 |---|---|
@@ -36,7 +36,10 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Developer guardrail policy preset | Done (Phase 2.7) |
 | Secret events in dashboard detail | Done (Phase 2.8) |
 | Secret scanning docs + test corpus | Done (Phase 2.9) |
+| Profile model + storage | Done (Phase 3.1) |
+| Per-profile API keys + audit attribution | Planned (Phase 3.2) |
 | Web control panel (policy toggles, alerts) | Planned |
+
 
 
 ## What AIWall Does
