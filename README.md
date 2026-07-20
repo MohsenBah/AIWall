@@ -38,7 +38,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Secret scanning docs + test corpus | Done (Phase 2.9) |
 | Profile model + storage | Done (Phase 3.1) |
 | Per-profile API keys + audit attribution | Done (Phase 3.2) |
-| Role-based policy conditions | Planned (Phase 3.3) |
+| Role-based policy conditions | Done (Phase 3.3) |
+| Child policy preset | Planned (Phase 3.4) |
 | Web control panel (policy toggles, alerts) | Planned |
 
 

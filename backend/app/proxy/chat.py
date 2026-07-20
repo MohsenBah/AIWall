@@ -124,6 +124,9 @@ class ChatCompletionProxy:
         provider_name: str,
         model: str,
         input_length: int,
+        *,
+        user_role: str | None = None,
+        user_id: str | None = None,
     ) -> PolicyResult:
         scan_result = scan_request_body(body, self._config.scanners)
         projected_usage = estimate_request_token_usage(body)
@@ -136,6 +139,8 @@ class ChatCompletionProxy:
             contains_secret=scan_result.contains_secret,
             contains_private_key=has_private_key_rule(rule_ids),
             estimated_cost=cost_estimate.estimated_cost if cost_estimate else 0.0,
+            user_role=user_role,
+            user_id=user_id,
         )
         result = self._policy_engine.evaluate(context)
         return _with_rule_ids(result, scan_result)
@@ -154,7 +159,14 @@ class ChatCompletionProxy:
         request_id = new_request_id()
         input_length = measure_input_length(body)
         started = time.perf_counter()
-        policy_result = self._evaluate_policy(body, provider.name, model, input_length)
+        policy_result = self._evaluate_policy(
+            body,
+            provider.name,
+            model,
+            input_length,
+            user_role=identity.role,
+            user_id=user_id,
+        )
 
         if policy_result.action == "block":
             latency_ms = (time.perf_counter() - started) * 1000.0
