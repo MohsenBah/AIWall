@@ -203,6 +203,26 @@ class AuditWriter:
             estimated_cost=estimated_cost,
         )
 
+    def decision_counts_for_user(
+        self,
+        user_id: str,
+        *,
+        since: datetime,
+    ) -> dict[str, int]:
+        """Per-decision event counts for a profile since ``since`` (UTC)."""
+        from sqlalchemy import func, select
+
+        with self._session_factory() as session:
+            stmt = (
+                select(AuditEventRow.decision, func.count())
+                .where(
+                    AuditEventRow.user_id == user_id,
+                    AuditEventRow.timestamp >= since,
+                )
+                .group_by(AuditEventRow.decision)
+            )
+            return {decision: int(count) for decision, count in session.execute(stmt)}
+
     def category_summary(
         self,
         *,

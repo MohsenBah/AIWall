@@ -54,6 +54,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
 | `app/storage/` | Database engine and schema migrations |
+| `app/reports/` | Family usage reports (weekly per-profile summary) |
 | `app/web/` | Server-rendered dashboard (Jinja2 + HTMX) |
 | `app/config.py` | Pydantic models for `aiwall.yaml` |
 
@@ -66,6 +67,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards and recent events |
 | `/blocked` | GET | Blocked-event review, filterable per profile (`?profile=<id>`) |
+| `/reports/weekly` | GET | Weekly family report (HTML; `?format=md` for Markdown) |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
 | `/partials/blocked` | GET | HTMX fragment for the blocked-event table |
 | `/partials/events/{id}/detail` | GET | HTMX fragment for privacy-safe event detail (rule ids, reason) |

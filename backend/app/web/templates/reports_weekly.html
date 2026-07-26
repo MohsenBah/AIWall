@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Weekly report{% endblock %}
+
+{% block content %}
+<section class="panel summary">
+    <div class="panel-header">
+        <div>
+            <h1>Weekly family report</h1>
+            <p class="muted">
+                {{ report.window_start.strftime('%Y-%m-%d %H:%M UTC') }}
+                →
+                {{ report.window_end.strftime('%Y-%m-%d %H:%M UTC') }}
+            </p>
+        </div>
+        <p class="muted"><a href="/reports/weekly?format=md">Download Markdown</a></p>
+    </div>
+    <div class="cards">
+        <div class="card">
+            <span class="card-label">Profiles</span>
+            <span class="card-value">{{ report.profiles|length }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Requests</span>
+            <span class="card-value">{{ report.total_requests }}</span>
+        </div>
+        <div class="card card-block">
+            <span class="card-label">Blocks</span>
+            <span class="card-value">{{ report.total_blocks }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Est. cost</span>
+            <span class="card-value">${{ '%.6f'|format(report.total_estimated_cost) }}</span>
+        </div>
+    </div>
+</section>
+
+{% if report.profiles %}
+{% for profile in report.profiles %}
+<section class="panel report-profile">
+    <h2>{{ profile.name }} <span class="muted">({{ profile.role }})</span></h2>
+    <div class="cards">
+        <div class="card">
+            <span class="card-label">Requests</span>
+            <span class="card-value">{{ profile.request_count }}</span>
+        </div>
+        <div class="card card-block">
+            <span class="card-label">Blocks</span>
+            <span class="card-value">{{ profile.block_count }}</span>
+        </div>
+        <div class="card card-warn">
+            <span class="card-label">Warns</span>
+            <span class="card-value">{{ profile.warn_count }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Tokens</span>
+            <span class="card-value">{{ profile.total_tokens }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Est. cost</span>
+            <span class="card-value">${{ '%.6f'|format(profile.estimated_cost) }}</span>
+        </div>
+    </div>
+    {% if profile.categories %}
+    <p class="muted category-line">
+        Categories:
+        {% for category, count in profile.categories.items() %}
+        <span class="rule-chip">{{ category }} × {{ count }}</span>
+        {% endfor %}
+    </p>
+    {% else %}
+    <p class="muted">No category-tagged events this week.</p>
+    {% endif %}
+</section>
+{% endfor %}
+{% else %}
+<section class="panel">
+    <p class="empty">No profiles configured yet.</p>
+</section>
+{% endif %}
+{% endblock %}

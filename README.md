@@ -43,7 +43,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Daily usage limits per profile | Done (Phase 3.5) |
 | Category tagging + per-profile aggregation | Done (Phase 3.6) |
 | Blocked-event review per profile | Done (Phase 3.7) |
-| Weekly family report | Planned (Phase 3.8) |
+| Weekly family report | Done (Phase 3.8) |
+| Reference Open WebUI + AIWall deploy | Planned (Phase 3.9) |
 | Web control panel (policy toggles, alerts) | Planned |
 
 

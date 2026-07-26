@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.reports.weekly import build_weekly_report, render_markdown
 from app.web.privacy import event_detail_context
 
 WEB_DIR = Path(__file__).resolve().parent
@@ -138,6 +139,27 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             request,
             "partials/blocked_table.html",
             _load_blocked(request, profile),
+        )
+
+    @router.get("/reports/weekly")
+    async def weekly_report(
+        request: Request,
+        format: str | None = None,
+    ) -> Response:
+        profile_store = getattr(request.app.state, "profile_store", None)
+        if profile_store is None:
+            raise HTTPException(status_code=503, detail="Profile store unavailable")
+        report = build_weekly_report(request.app.state.audit_writer, profile_store)
+        fmt = (format or "").lower()
+        if fmt in {"md", "markdown", "text"}:
+            return PlainTextResponse(
+                render_markdown(report),
+                media_type="text/markdown; charset=utf-8",
+            )
+        return templates.TemplateResponse(
+            request,
+            "reports_weekly.html",
+            {"report": report},
         )
 
     return router
