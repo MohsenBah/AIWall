@@ -2,6 +2,8 @@
 
 Point each household Open WebUI account at AIWall with its own profile API key so child policies, daily limits, and audit attribution apply.
 
+For the full family-mode model (roles, presets, limits, parent review URLs), see [family-mode.md](family-mode.md).
+
 ## Quick start
 
 From the **repository root**:

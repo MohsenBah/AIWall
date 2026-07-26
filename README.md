@@ -8,7 +8,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 
 ## Status
 
-**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning) is complete. Phase 3 adds family-mode profiles.
+**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning) is complete. **Phase 3 (family mode) is complete.**
 
 | Component | Status |
 |---|---|
@@ -45,8 +45,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Blocked-event review per profile | Done (Phase 3.7) |
 | Weekly family report | Done (Phase 3.8) |
 | Reference Open WebUI + AIWall deploy | Done (Phase 3.9) |
-| Family-mode docs + coverage | Planned (Phase 3.10) |
-| Web control panel (policy toggles, alerts) | Planned |
+| Family-mode docs + coverage | Done (Phase 3.10) |
+| Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
 
@@ -68,7 +68,7 @@ AIWall governs traffic from clients you control — anything with a configurable
 
 If you run your own AI stack, AIWall supports household profiles: give a child an account on your self-hosted chat UI (e.g. Open WebUI) routed through AIWall, with per-profile policies, daily limits, and usage summaries. The parent controls the client, so no traffic interception is needed.
 
-See [docs/open-webui.md](docs/open-webui.md) for the reference Compose stack and how to map each Open WebUI user to an AIWall profile key.
+See [docs/family-mode.md](docs/family-mode.md) for profiles, keys, and limits, and [docs/open-webui.md](docs/open-webui.md) for the reference Compose stack.
 
 ## Editions
 

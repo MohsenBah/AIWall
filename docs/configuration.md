@@ -362,6 +362,8 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 ## See also
 
+- [Family mode](family-mode.md) — profiles, keys, limits, parent review
+- [Open WebUI](open-webui.md) — reference Compose + user → key mapping
 - [Architecture](architecture.md) — request flow and components
 - [Secret scanning](secret-scanning.md) — detectors, privacy, and test corpus
 - [README](../README.md) — quick start
@@ -369,4 +371,3 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 - `presets/developer.yaml` — developer guardrail policy pack
 - `deploy/examples/aiwall.docker.yaml` — Docker Compose template
 - `deploy/examples/docker-compose.open-webui.yml` — Open WebUI + AIWall family stack
-- [open-webui.md](open-webui.md) — map Open WebUI users to AIWall profiles
