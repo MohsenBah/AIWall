@@ -56,6 +56,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/storage/` | Database engine and schema migrations |
 | `app/reports/` | Family usage reports (weekly per-profile summary) |
 | `app/web/` | Server-rendered dashboard (Jinja2 + HTMX) |
+| `deploy/examples/` | Docker Compose templates (default + Open WebUI family stack) |
 | `app/config.py` | Pydantic models for `aiwall.yaml` |
 
 ## Exposed endpoints

@@ -67,3 +67,10 @@ scanners:
 # gateway_auth:
 #   enabled: true
 #   api_key_env: AIWALL_API_KEY
+
+# Optional: browser CORS for Open WebUI Direct Connections.
+# cors:
+#   enabled: true
+#   allow_origins:
+#     - "http://localhost:3000"
+#     - "http://127.0.0.1:3000"

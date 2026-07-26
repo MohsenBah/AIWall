@@ -1,0 +1,88 @@
+# Family / Open WebUI reference stack (Phase 3.9)
+#
+# From the repo root:
+#   docker compose -f deploy/examples/docker-compose.open-webui.yml --profile ollama up --build -d
+#
+# Open WebUI:  http://127.0.0.1:3000
+# AIWall dash: http://127.0.0.1:8080/
+#
+# See docs/open-webui.md for mapping each Open WebUI user to an AIWall profile key.
+
+services:
+  aiwall:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile
+    container_name: aiwall
+    restart: unless-stopped
+    ports:
+      - "${AIWALL_PORT:-8080}:${AIWALL_PORT:-8080}"
+    environment:
+      AIWALL_CONFIG: /app/aiwall.yaml
+      AIWALL_PORT: ${AIWALL_PORT:-8080}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AIWALL_API_KEY: ${AIWALL_API_KEY:-change-me-admin}
+    volumes:
+      - aiwall_data:/app/data
+      - ./aiwall.family.yaml:/app/aiwall.yaml:ro
+      - ../../prices.yaml.example:/app/prices.yaml:ro
+    networks:
+      - aiwall
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; urllib.request.urlopen(f'http://127.0.0.1:{os.environ.get(\"AIWALL_PORT\", \"8080\")}/healthz')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: aiwall-open-webui
+    restart: unless-stopped
+    ports:
+      - "${OPEN_WEBUI_PORT:-3000}:8080"
+    environment:
+      # Route Open WebUI's server-side OpenAI client through AIWall (admin/bootstrap).
+      ENABLE_OPENAI_API: "true"
+      OPENAI_API_BASE_URL: http://aiwall:8080/v1
+      OPENAI_API_KEY: ${AIWALL_API_KEY:-change-me-admin}
+      # Per-user profile keys: each household member adds a Direct Connection.
+      ENABLE_DIRECT_CONNECTIONS: "true"
+      # Prefer AIWall-gated models over talking to Ollama directly.
+      ENABLE_OLLAMA_API: "false"
+      WEBUI_AUTH: "true"
+    volumes:
+      - open_webui_data:/app/backend/data
+    depends_on:
+      aiwall:
+        condition: service_healthy
+    networks:
+      - aiwall
+
+  ollama:
+    profiles:
+      - ollama
+    image: ollama/ollama:latest
+    container_name: aiwall-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - aiwall
+
+networks:
+  aiwall:
+    driver: bridge
+
+volumes:
+  aiwall_data:
+  open_webui_data:
+  ollama_data:

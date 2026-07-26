@@ -222,6 +222,8 @@ The gateway validates the key and does **not** forward it upstream; provider key
 
 Profile keys are stored as SHA-256 hashes only. A successful profile-authenticated request sets audit `user_id` to the profile id.
 
+Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN. Even with auth disabled, presenting a valid profile key still attributes the request to that profile.
+
 ### Daily usage limits
 
 Profiles may set optional daily caps:
@@ -236,7 +238,26 @@ Profiles may set optional daily caps:
 
 The reset window is the **UTC calendar day** (midnight UTC). Over-limit requests return HTTP 403 with `error.reason` / `error.policy` set to `daily-limit`.
 
-Leave disabled for trusted localhost / homelab networks. Enable when exposing AIWall beyond your LAN. Even with auth disabled, presenting a valid profile key still attributes the request to that profile.
+### `cors`
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Emit CORS headers for browser clients (e.g. Open WebUI Direct Connections) |
+| `allow_origins` | string[] | `[]` | Allowed `Origin` values (must be non-empty when enabled) |
+| `allow_methods` | string[] | `GET`, `POST`, `OPTIONS` | Allowed methods |
+| `allow_headers` | string[] | `Authorization`, `Content-Type`, … | Allowed request headers |
+
+Example for the family Open WebUI stack on port 3000:
+
+```yaml
+cors:
+  enabled: true
+  allow_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+```
+
+See [Open WebUI reference](open-webui.md) for the full mapping walkthrough.
 
 ## Environment variables
 
@@ -337,6 +358,7 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 - Audit DB persists in the `aiwall_data` volume at `/app/data/aiwall.db`
 - Use `http://ollama:11434` for Ollama when running the `ollama` Compose profile
 - See `deploy/.env.example` for port and secret templates
+- Family / Open WebUI stack: `deploy/examples/docker-compose.open-webui.yml` + [open-webui.md](open-webui.md)
 
 ## See also
 
@@ -346,3 +368,5 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 - `aiwall.yaml.example` — local development template
 - `presets/developer.yaml` — developer guardrail policy pack
 - `deploy/examples/aiwall.docker.yaml` — Docker Compose template
+- `deploy/examples/docker-compose.open-webui.yml` — Open WebUI + AIWall family stack
+- [open-webui.md](open-webui.md) — map Open WebUI users to AIWall profiles

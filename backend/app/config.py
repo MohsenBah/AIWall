@@ -50,6 +50,19 @@ class GatewayAuthConfig(BaseModel):
     api_key_env: str = "AIWALL_API_KEY"
 
 
+class CorsConfig(BaseModel):
+    """Browser CORS for Open WebUI Direct Connections and similar clients."""
+
+    enabled: bool = False
+    allow_origins: list[str] = Field(default_factory=list)
+    allow_methods: list[str] = Field(
+        default_factory=lambda: ["GET", "POST", "OPTIONS"]
+    )
+    allow_headers: list[str] = Field(
+        default_factory=lambda: ["Authorization", "Content-Type", "OpenAI-Organization"]
+    )
+
+
 class EntropyScannerConfig(BaseModel):
     enabled: bool = True
     min_length: int = 20
@@ -89,6 +102,7 @@ class AIWallConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     pricing: PricingConfig = Field(default_factory=PricingConfig)
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
+    cors: CorsConfig = Field(default_factory=CorsConfig)
     scanners: ScannerConfig = Field(default_factory=ScannerConfig)
 
 

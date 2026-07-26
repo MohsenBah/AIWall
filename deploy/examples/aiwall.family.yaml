@@ -1,0 +1,59 @@
+# Reference config for the Open WebUI + AIWall family stack.
+# Mounted by deploy/examples/docker-compose.open-webui.yml
+
+server:
+  host: 0.0.0.0
+  port: 8080
+
+providers:
+  - name: openai
+    type: openai-compatible
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    models: ["gpt-*"]
+
+  - name: ollama
+    type: ollama
+    base_url: http://ollama:11434
+    models: ["llama*", "mistral*", "qwen*"]
+
+presets:
+  - child
+  - developer
+
+policies:
+  - name: block-secrets
+    when: input.contains_secret
+    action: block
+
+  - name: warn-large-cost
+    when: estimated_cost > 1.00
+    action: warn
+
+logging:
+  store: sqlite:///data/aiwall.db
+  log_raw_prompts: false
+  retention_days: 90
+
+scanners:
+  ignore_examples: true
+  entropy:
+    enabled: true
+    min_length: 20
+    threshold: 4.5
+  dotenv:
+    enabled: true
+    min_lines: 2
+    min_value_length: 8
+    pasted_file_min_lines: 5
+
+gateway_auth:
+  enabled: true
+  api_key_env: AIWALL_API_KEY
+
+# Allow browser Direct Connections from Open WebUI (port 3000 by default).
+cors:
+  enabled: true
+  allow_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"

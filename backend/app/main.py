@@ -69,6 +69,8 @@ def create_app(
     if http_client is not None:
         app.state.http_client = http_client
 
+    _configure_cors(app, config)
+
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
         config: AIWallConfig = app.state.config
@@ -85,6 +87,20 @@ def create_app(
     app.include_router(proxy_router)
     _register_web(app)
     return app
+
+
+def _configure_cors(app: FastAPI, config: AIWallConfig) -> None:
+    if not config.cors.enabled or not config.cors.allow_origins:
+        return
+    from fastapi.middleware.cors import CORSMiddleware
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(config.cors.allow_origins),
+        allow_credentials=False,
+        allow_methods=list(config.cors.allow_methods),
+        allow_headers=list(config.cors.allow_headers),
+    )
 
 
 def _register_web(app: FastAPI) -> None:

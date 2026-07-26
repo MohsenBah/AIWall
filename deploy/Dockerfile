@@ -17,6 +17,7 @@ RUN apt-get update \
 COPY pyproject.toml README.md LICENSE ./
 COPY backend ./backend
 COPY presets ./presets
+COPY scripts ./scripts
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .
