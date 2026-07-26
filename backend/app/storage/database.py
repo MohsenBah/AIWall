@@ -59,6 +59,7 @@ def _migrate_audit_schema(engine: Engine) -> None:
         "total_tokens": "INTEGER",
         "redaction_count": "INTEGER DEFAULT 0",
         "matched_rule_ids": "TEXT",
+        "categories": "TEXT",
     }
     with engine.connect() as conn:
         existing = {row[1] for row in conn.execute(text("PRAGMA table_info(audit_events)"))}
@@ -76,22 +77,6 @@ def _ensure_profiles_table(engine: Engine) -> None:
         if "profiles" in tables:
             return
     Base.metadata.create_all(engine, tables=[Base.metadata.tables["profiles"]])
-
-
-def _migrate_audit_schema(engine: Engine) -> None:
-    columns = {
-        "prompt_tokens": "INTEGER",
-        "completion_tokens": "INTEGER",
-        "total_tokens": "INTEGER",
-        "redaction_count": "INTEGER DEFAULT 0",
-        "matched_rule_ids": "TEXT",
-    }
-    with engine.connect() as conn:
-        existing = {row[1] for row in conn.execute(text("PRAGMA table_info(audit_events)"))}
-        for name, col_type in columns.items():
-            if name not in existing:
-                conn.execute(text(f"ALTER TABLE audit_events ADD COLUMN {name} {col_type}"))
-        conn.commit()
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:

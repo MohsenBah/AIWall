@@ -137,6 +137,8 @@ when: user.role == "child" and input.category in ["explicit", "unsafe"]
 
 Built-in categories (keyword classifier): `explicit`, `violence`, `unsafe`.
 
+Every proxied request is classified regardless of policy outcome, and matched categories are stored on the audit row (`categories`, comma-separated). `AuditWriter.category_summary(since=..., user_id=...)` aggregates per-profile per-category counts for reports and the dashboard.
+
 Named presets:
 
 | Preset | Purpose |

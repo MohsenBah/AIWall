@@ -38,6 +38,7 @@ class AuditEventRow(Base):
     total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     policy_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     matched_rule_ids: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    categories: Mapped[str | None] = mapped_column(String(128), nullable=True)
     redaction_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     latency_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     raw_prompt: Mapped[str | None] = mapped_column(Text, nullable=True)

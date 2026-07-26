@@ -31,6 +31,7 @@ class AuditEvent:
     total_tokens: int | None = None
     policy_id: str | None = None
     matched_rule_ids: str | None = None
+    categories: str | None = None
     redaction_count: int = 0
     raw_prompt: str | None = None
     raw_response: str | None = None
@@ -95,6 +96,7 @@ class AuditWriter:
             total_tokens=event.total_tokens,
             policy_id=event.policy_id,
             matched_rule_ids=event.matched_rule_ids,
+            categories=event.categories,
             redaction_count=event.redaction_count,
             latency_ms=event.latency_ms,
             raw_prompt=event.raw_prompt,
@@ -197,3 +199,35 @@ class AuditWriter:
             total_tokens=total_tokens,
             estimated_cost=estimated_cost,
         )
+
+    def category_summary(
+        self,
+        *,
+        since: datetime | None = None,
+        user_id: str | None = None,
+    ) -> dict[str | None, dict[str, int]]:
+        """Per-profile counts of category-tagged events: ``{user_id: {category: count}}``.
+
+        Events tagged with multiple categories (comma-joined) count once per category.
+        """
+        from sqlalchemy import select
+
+        with self._session_factory() as session:
+            stmt = select(AuditEventRow.user_id, AuditEventRow.categories).where(
+                AuditEventRow.categories.is_not(None)
+            )
+            if since is not None:
+                stmt = stmt.where(AuditEventRow.timestamp >= since)
+            if user_id is not None:
+                stmt = stmt.where(AuditEventRow.user_id == user_id)
+            rows = session.execute(stmt).all()
+
+        summary: dict[str | None, dict[str, int]] = {}
+        for event_user_id, categories in rows:
+            for category in (categories or "").split(","):
+                name = category.strip()
+                if not name:
+                    continue
+                per_user = summary.setdefault(event_user_id, {})
+                per_user[name] = per_user.get(name, 0) + 1
+        return summary

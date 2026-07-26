@@ -41,7 +41,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Role-based policy conditions | Done (Phase 3.3) |
 | Child policy preset | Done (Phase 3.4) |
 | Daily usage limits per profile | Done (Phase 3.5) |
-| Category tagging + per-profile aggregation | Planned (Phase 3.6) |
+| Category tagging + per-profile aggregation | Done (Phase 3.6) |
+| Blocked-event review per profile | Planned (Phase 3.7) |
 | Web control panel (policy toggles, alerts) | Planned |
 
 

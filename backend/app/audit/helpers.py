@@ -105,6 +105,7 @@ def log_proxy_event(
     redaction_count: int = 0,
     rule_ids: tuple[str, ...] = (),
     user_id: str | None = None,
+    categories: frozenset[str] | tuple[str, ...] = (),
 ) -> None:
     raw_prompt = None
     if config.logging.log_raw_prompts and body:
@@ -113,6 +114,7 @@ def log_proxy_event(
 
     raw_response = response_text if config.logging.log_raw_prompts and response_text else None
     matched_rule_ids = ",".join(rule_ids) if rule_ids else None
+    categories_value = ",".join(sorted(categories)) if categories else None
 
     audit_writer.write(
         AuditEvent(
@@ -127,6 +129,7 @@ def log_proxy_event(
             latency_ms=latency_ms,
             policy_id=policy_id,
             matched_rule_ids=matched_rule_ids,
+            categories=categories_value,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,

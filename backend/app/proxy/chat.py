@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
 from app.auth.gateway import GatewayIdentity, gateway_auth_enabled, strip_client_authorization
-from app.classifiers.categories import classify_request_body
+from app.classifiers.categories import CategoryResult, classify_request_body
 from app.config import AIWallConfig
 from app.policies.context import PolicyContext
 from app.policies.engine import PolicyEngine, PolicyResult
@@ -132,9 +132,11 @@ class ChatCompletionProxy:
         *,
         user_role: str | None = None,
         user_id: str | None = None,
+        category_result: CategoryResult | None = None,
     ) -> PolicyResult:
         scan_result = scan_request_body(body, self._config.scanners)
-        category_result = classify_request_body(body)
+        if category_result is None:
+            category_result = classify_request_body(body)
         projected_usage = estimate_request_token_usage(body)
         cost_estimate = self._cost_estimator.estimate(provider_name, model, projected_usage)
         rule_ids = tuple(match.rule_id for match in scan_result.matches)
@@ -167,6 +169,8 @@ class ChatCompletionProxy:
         request_id = new_request_id()
         input_length = measure_input_length(body)
         started = time.perf_counter()
+        category_result = classify_request_body(body)
+        categories = category_result.categories
         policy_result = self._evaluate_policy(
             body,
             provider.name,
@@ -174,6 +178,7 @@ class ChatCompletionProxy:
             input_length,
             user_role=identity.role,
             user_id=user_id,
+            category_result=category_result,
         )
 
         if policy_result.action == "block":
@@ -193,6 +198,7 @@ class ChatCompletionProxy:
                 policy_id=policy_result.policy_id,
                 rule_ids=policy_result.rule_ids,
                 user_id=user_id,
+                categories=categories,
             )
             return policy_blocked_response(policy_result)
 
@@ -224,6 +230,7 @@ class ChatCompletionProxy:
                     body=body,
                     policy_id=limit_check.result.policy_id,
                     user_id=user_id,
+                    categories=categories,
                 )
                 return policy_blocked_response(limit_check.result)
 
@@ -257,6 +264,7 @@ class ChatCompletionProxy:
                 redaction_count=redaction_count,
                 extra_headers=response_headers,
                 user_id=user_id,
+                categories=categories,
             )
 
         try:
@@ -283,6 +291,7 @@ class ChatCompletionProxy:
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
                 user_id=user_id,
+                categories=categories,
             )
             raise HTTPException(
                 status_code=502,
@@ -325,6 +334,7 @@ class ChatCompletionProxy:
             redaction_count=redaction_count,
             rule_ids=policy_result.rule_ids,
             user_id=user_id,
+            categories=categories,
         )
 
         return Response(
@@ -349,6 +359,7 @@ class ChatCompletionProxy:
         redaction_count: int = 0,
         extra_headers: dict[str, str] | None = None,
         user_id: str | None = None,
+        categories: frozenset[str] = frozenset(),
     ) -> StreamingResponse | Response:
         upstream_request = self._http_client.build_request(
             "POST",
@@ -377,6 +388,7 @@ class ChatCompletionProxy:
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
                 user_id=user_id,
+                categories=categories,
             )
             raise HTTPException(
                 status_code=502,
@@ -402,6 +414,7 @@ class ChatCompletionProxy:
                 redaction_count=redaction_count,
                 rule_ids=policy_result.rule_ids,
                 user_id=user_id,
+                categories=categories,
             )
             await upstream_response.aclose()
             return Response(
@@ -448,6 +461,7 @@ class ChatCompletionProxy:
                     redaction_count=redaction_count,
                     rule_ids=policy_result.rule_ids,
                     user_id=user_id,
+                    categories=categories,
                 )
 
         return StreamingResponse(
