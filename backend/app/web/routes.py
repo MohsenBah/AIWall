@@ -105,6 +105,41 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             event_detail_context(event),
         )
 
+    def _load_blocked(request: Request, profile: str | None):
+        audit_writer = request.app.state.audit_writer
+        profile_store = getattr(request.app.state, "profile_store", None)
+        profiles = profile_store.list() if profile_store is not None else []
+        profile_names = {str(p.id): p.name for p in profiles}
+        selected_profile = profile if profile in profile_names else None
+        events = audit_writer.list_recent(
+            limit=DEFAULT_EVENT_LIMIT,
+            decision="block",
+            user_id=selected_profile,
+        )
+        return {
+            "events": events,
+            "event_limit": DEFAULT_EVENT_LIMIT,
+            "profiles": profiles,
+            "profile_names": profile_names,
+            "selected_profile": selected_profile,
+        }
+
+    @router.get("/blocked", response_class=HTMLResponse)
+    async def blocked_review(request: Request, profile: str | None = None) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "blocked.html",
+            _load_blocked(request, profile),
+        )
+
+    @router.get("/partials/blocked", response_class=HTMLResponse)
+    async def blocked_partial(request: Request, profile: str | None = None) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "partials/blocked_table.html",
+            _load_blocked(request, profile),
+        )
+
     return router
 
 

@@ -65,7 +65,9 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/v1/models` | GET | Models from configured providers (OpenAI list shape) |
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards and recent events |
+| `/blocked` | GET | Blocked-event review, filterable per profile (`?profile=<id>`) |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
+| `/partials/blocked` | GET | HTMX fragment for the blocked-event table |
 | `/partials/events/{id}/detail` | GET | HTMX fragment for privacy-safe event detail (rule ids, reason) |
 | `/static/*` | GET | Dashboard CSS |
 

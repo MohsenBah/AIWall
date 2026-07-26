@@ -114,6 +114,7 @@ class AuditWriter:
         *,
         decision: str | None = None,
         provider: str | None = None,
+        user_id: str | None = None,
     ) -> list[AuditEventRow]:
         from sqlalchemy import select
 
@@ -123,6 +124,8 @@ class AuditWriter:
                 stmt = stmt.where(AuditEventRow.decision == decision)
             if provider:
                 stmt = stmt.where(AuditEventRow.provider == provider)
+            if user_id:
+                stmt = stmt.where(AuditEventRow.user_id == user_id)
             return list(session.scalars(stmt).all())
 
     def get_by_id(self, event_id: int) -> AuditEventRow | None:

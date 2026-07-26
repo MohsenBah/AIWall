@@ -1,0 +1,74 @@
+{% if events %}
+<table class="events">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Time</th>
+            <th>Profile</th>
+            <th>Model</th>
+            <th>Reason</th>
+            <th>Categories</th>
+            <th>Rules</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr class="event-row">
+            <td class="expand">
+                <button
+                    type="button"
+                    class="linkish"
+                    hx-get="/partials/events/{{ event.id }}/detail"
+                    hx-target="#blocked-detail-{{ event.id }}"
+                    hx-swap="innerHTML"
+                    aria-label="Show event detail"
+                >Details</button>
+            </td>
+            <td class="mono">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else '-' }}</td>
+            <td>
+                {% if event.user_id %}
+                {{ profile_names.get(event.user_id, 'profile ' ~ event.user_id) }}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mono">{{ event.model }}</td>
+            <td class="muted">{{ event.reason or '-' }}</td>
+            <td class="rules">
+                {% if event.categories %}
+                    {% for category in event.categories.split(',') %}
+                    {% if category.strip() %}
+                    <span class="rule-chip">{{ category.strip() }}</span>
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td class="rules">
+                {% if event.matched_rule_ids %}
+                    {% for rule_id in event.matched_rule_ids.split(',') %}
+                    {% if rule_id.strip() %}
+                    <span class="rule-chip">{{ rule_id.strip() }}</span>
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr class="event-detail-row">
+            <td colspan="7" id="blocked-detail-{{ event.id }}" class="event-detail-slot"></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="empty">
+    {% if selected_profile %}
+    No blocked events for this profile.
+    {% else %}
+    No blocked events yet.
+    {% endif %}
+</p>
+{% endif %}
