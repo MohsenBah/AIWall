@@ -46,6 +46,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Weekly family report | Done (Phase 3.8) |
 | Reference Open WebUI + AIWall deploy | Done (Phase 3.9) |
 | Family-mode docs + coverage | Done (Phase 3.10) |
+| Dashboard cost + usage trends | Done (Phase 4.1) |
+| Model usage page | Planned (Phase 4.2) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

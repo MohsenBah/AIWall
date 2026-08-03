@@ -20,10 +20,20 @@ STATIC_DIR = WEB_DIR / "static"
 
 DEFAULT_EVENT_LIMIT = 50
 DEFAULT_SUMMARY_WINDOW_HOURS = 24
+DEFAULT_TREND_BUCKET_HOURS = 1
 
 
 def build_templates() -> Jinja2Templates:
-    return Jinja2Templates(directory=str(TEMPLATES_DIR))
+    templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+    def bar_height(value: float, maximum: float, *, min_px: int = 2, max_px: int = 120) -> int:
+        if maximum <= 0 or value <= 0:
+            return min_px if value > 0 else 0
+        ratio = min(float(value) / float(maximum), 1.0)
+        return max(min_px, int(round(ratio * max_px)))
+
+    templates.env.globals["bar_height"] = bar_height
+    return templates
 
 
 def create_web_router(templates: Jinja2Templates) -> APIRouter:
@@ -58,6 +68,10 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             provider=provider,
         )
         summary = audit_writer.summary(window_hours=DEFAULT_SUMMARY_WINDOW_HOURS)
+        trends = audit_writer.usage_timeseries(
+            window_hours=DEFAULT_SUMMARY_WINDOW_HOURS,
+            bucket_hours=DEFAULT_TREND_BUCKET_HOURS,
+        )
         return templates.TemplateResponse(
             request,
             "dashboard.html",
@@ -65,6 +79,7 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 "events": events,
                 "event_limit": DEFAULT_EVENT_LIMIT,
                 "summary": summary,
+                "trends": trends,
                 "providers": providers,
                 "selected_decision": selected_decision,
                 "selected_provider": selected_provider,

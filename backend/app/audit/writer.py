@@ -73,6 +73,36 @@ class ProfileUsage:
     estimated_cost: float = 0.0
 
 
+@dataclass(frozen=True)
+class UsageBucket:
+    start: datetime
+    request_count: int = 0
+    estimated_cost: float = 0.0
+
+
+@dataclass(frozen=True)
+class UsageTimeseries:
+    window_hours: int
+    bucket_hours: int
+    buckets: tuple[UsageBucket, ...] = ()
+
+    @property
+    def max_requests(self) -> int:
+        return max((bucket.request_count for bucket in self.buckets), default=0)
+
+    @property
+    def max_cost(self) -> float:
+        return max((bucket.estimated_cost for bucket in self.buckets), default=0.0)
+
+    @property
+    def total_requests(self) -> int:
+        return sum(bucket.request_count for bucket in self.buckets)
+
+    @property
+    def total_estimated_cost(self) -> float:
+        return sum(bucket.estimated_cost for bucket in self.buckets)
+
+
 class AuditWriter:
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -164,6 +194,86 @@ class AuditWriter:
             total=sum(decision_counts.values()),
             decision_counts=decision_counts,
             total_estimated_cost=float(total_cost or 0.0),
+        )
+
+    def usage_timeseries(
+        self,
+        *,
+        window_hours: int = 24,
+        bucket_hours: int = 1,
+        now: datetime | None = None,
+    ) -> UsageTimeseries:
+        """Return request and cost totals in fixed UTC buckets over a rolling window.
+
+        Empty buckets are included so charts render a continuous series.
+        """
+        from sqlalchemy import select
+
+        if window_hours < 1:
+            raise ValueError("window_hours must be >= 1")
+        if bucket_hours < 1:
+            raise ValueError("bucket_hours must be >= 1")
+        if window_hours % bucket_hours != 0:
+            raise ValueError("window_hours must be divisible by bucket_hours")
+
+        window_end = now or datetime.now(UTC)
+        if window_end.tzinfo is None:
+            window_end = window_end.replace(tzinfo=UTC)
+        else:
+            window_end = window_end.astimezone(UTC)
+
+        # Align the last bucket to the current bucket boundary (UTC).
+        bucket_seconds = bucket_hours * 3600
+        end_epoch = int(window_end.timestamp())
+        last_bucket_epoch = end_epoch - (end_epoch % bucket_seconds)
+        last_bucket_start = datetime.fromtimestamp(last_bucket_epoch, tz=UTC)
+        bucket_count = window_hours // bucket_hours
+        first_bucket_start = last_bucket_start - timedelta(
+            hours=bucket_hours * (bucket_count - 1)
+        )
+        since = first_bucket_start
+
+        with self._session_factory() as session:
+            stmt = select(
+                AuditEventRow.timestamp,
+                AuditEventRow.estimated_cost,
+            ).where(AuditEventRow.timestamp >= since)
+            rows = session.execute(stmt).all()
+
+        totals: dict[datetime, list[float]] = {
+            first_bucket_start
+            + timedelta(hours=bucket_hours * index): [0.0, 0.0]
+            for index in range(bucket_count)
+        }
+
+        for timestamp, estimated_cost in rows:
+            if timestamp is None:
+                continue
+            if timestamp.tzinfo is None:
+                ts = timestamp.replace(tzinfo=UTC)
+            else:
+                ts = timestamp.astimezone(UTC)
+            if ts < since:
+                continue
+            offset = int((ts - first_bucket_start).total_seconds() // bucket_seconds)
+            if offset < 0 or offset >= bucket_count:
+                continue
+            bucket_start = first_bucket_start + timedelta(hours=bucket_hours * offset)
+            totals[bucket_start][0] += 1
+            totals[bucket_start][1] += float(estimated_cost or 0.0)
+
+        buckets = tuple(
+            UsageBucket(
+                start=start,
+                request_count=int(values[0]),
+                estimated_cost=float(values[1]),
+            )
+            for start, values in sorted(totals.items())
+        )
+        return UsageTimeseries(
+            window_hours=window_hours,
+            bucket_hours=bucket_hours,
+            buckets=buckets,
         )
 
     def usage_for_user(

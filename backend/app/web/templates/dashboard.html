@@ -29,6 +29,50 @@
     </div>
 </section>
 
+<section class="panel trends">
+    <div class="panel-header">
+        <div>
+            <h1>Usage trends</h1>
+            <p class="muted">
+                Requests and estimated cost per {{ trends.bucket_hours }}h bucket
+                (last {{ trends.window_hours }}h, UTC).
+            </p>
+        </div>
+    </div>
+    <div class="trend-grid">
+        <div class="trend-chart">
+            <h2>Requests</h2>
+            <div class="bars" role="img" aria-label="Requests over time">
+                {% for bucket in trends.buckets %}
+                <div class="bar-wrap" title="{{ bucket.start.strftime('%Y-%m-%d %H:%M UTC') }}: {{ bucket.request_count }} requests">
+                    <div
+                        class="bar bar-requests"
+                        style="height: {{ bar_height(bucket.request_count, trends.max_requests) }}px"
+                    ></div>
+                    <span class="bar-label">{{ bucket.start.strftime('%H') }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="muted trend-total">Total {{ trends.total_requests }} requests</p>
+        </div>
+        <div class="trend-chart">
+            <h2>Estimated cost</h2>
+            <div class="bars" role="img" aria-label="Estimated cost over time">
+                {% for bucket in trends.buckets %}
+                <div class="bar-wrap" title="{{ bucket.start.strftime('%Y-%m-%d %H:%M UTC') }}: ${{ '%.6f'|format(bucket.estimated_cost) }}">
+                    <div
+                        class="bar bar-cost"
+                        style="height: {{ bar_height(bucket.estimated_cost, trends.max_cost) }}px"
+                    ></div>
+                    <span class="bar-label">{{ bucket.start.strftime('%H') }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="muted trend-total">Total ${{ '%.6f'|format(trends.total_estimated_cost) }}</p>
+        </div>
+    </div>
+</section>
+
 <section class="panel">
     <div class="panel-header">
         <div>

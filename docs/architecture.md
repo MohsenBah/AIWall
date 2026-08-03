@@ -66,7 +66,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/v1/chat/completions` | POST | OpenAI-compatible proxy (streaming and non-streaming) |
 | `/v1/models` | GET | Models from configured providers (OpenAI list shape) |
 | `/healthz` | GET | Liveness, version, provider/policy counts |
-| `/` | GET | Dashboard — summary cards and recent events |
+| `/` | GET | Dashboard — summary cards, usage trends, and recent events |
 | `/blocked` | GET | Blocked-event review, filterable per profile (`?profile=<id>`) |
 | `/reports/weekly` | GET | Weekly family report (HTML; `?format=md` for Markdown) |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
