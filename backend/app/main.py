@@ -13,6 +13,7 @@ import httpx
 from fastapi import FastAPI
 
 from app import __version__
+from app.alerts import RecordingNotifier, build_alert_dispatcher
 from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
 from app.policies.engine import PolicyEngine
@@ -33,12 +34,19 @@ def _init_storage(config: AIWallConfig) -> tuple[Any, AuditWriter, ProfileStore]
 def create_app(
     config_path: Path | str | None = None,
     http_client: httpx.AsyncClient | None = None,
+    *,
+    recording_notifier: RecordingNotifier | None = None,
 ) -> FastAPI:
     resolved_path = resolve_config_path(config_path)
     config = load_config(resolved_path)
     engine, audit_writer, profile_store = _init_storage(config)
     prices_path = resolve_prices_path(resolved_path, config.pricing.file)
     cost_estimator = CostEstimator(prices_path)
+    alert_dispatcher = build_alert_dispatcher(
+        config,
+        http_client=http_client,
+        recording_notifier=recording_notifier,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -66,6 +74,9 @@ def create_app(
     app.state.profile_store = profile_store
     app.state.policy_engine = PolicyEngine(resolved_path)
     app.state.cost_estimator = cost_estimator
+    app.state.alert_dispatcher = alert_dispatcher
+    if recording_notifier is not None:
+        app.state.recording_notifier = recording_notifier
     if http_client is not None:
         app.state.http_client = http_client
 

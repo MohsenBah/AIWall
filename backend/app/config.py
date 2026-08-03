@@ -50,6 +50,19 @@ class GatewayAuthConfig(BaseModel):
     api_key_env: str = "AIWALL_API_KEY"
 
 
+class AlertChannelConfig(BaseModel):
+    """One alert destination. Channel-specific fields are used by later phases."""
+
+    channel: str
+    on: list[str] = Field(default_factory=list)
+    enabled: bool = True
+    bot_token_env: str | None = None
+    chat_id: str | None = None
+    url: str | None = None
+    topic: str | None = None
+    server: str | None = None
+
+
 class CorsConfig(BaseModel):
     """Browser CORS for Open WebUI Direct Connections and similar clients."""
 
@@ -102,6 +115,7 @@ class AIWallConfig(BaseModel):
     logging: LoggingConfig = Field(default_factory=LoggingConfig)
     pricing: PricingConfig = Field(default_factory=PricingConfig)
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
+    alerts: list[AlertChannelConfig] = Field(default_factory=list)
     cors: CorsConfig = Field(default_factory=CorsConfig)
     scanners: ScannerConfig = Field(default_factory=ScannerConfig)
 
@@ -122,6 +136,8 @@ def load_config(path: Path | str | None = None) -> AIWallConfig:
 
     with config_path.open(encoding="utf-8") as config_file:
         raw: Any = yaml.safe_load(config_file) or {}
+
+    _normalize_yaml_alert_keys(raw)
 
     config = AIWallConfig.model_validate(raw)
     if config.presets:
@@ -146,6 +162,22 @@ def load_config(path: Path | str | None = None) -> AIWallConfig:
             update={"policies": apply_policy_overrides(config.policies, overrides)}
         )
     return config
+
+
+def _normalize_yaml_alert_keys(raw: Any) -> None:
+    """PyYAML maps the unquoted key ``on`` to boolean ``True`` (YAML 1.1)."""
+    if not isinstance(raw, dict):
+        return
+    alerts = raw.get("alerts")
+    if not isinstance(alerts, list):
+        return
+    for entry in alerts:
+        if not isinstance(entry, dict):
+            continue
+        if True in entry and "on" not in entry:
+            entry["on"] = entry.pop(True)
+        if "triggers" in entry and "on" not in entry:
+            entry["on"] = entry.pop("triggers")
 
 
 def reload_config(app_config_path: Path | str | None) -> AIWallConfig:

@@ -68,6 +68,12 @@ scanners:
 #   enabled: true
 #   api_key_env: AIWALL_API_KEY
 
+# Optional: alert channels (stub is for tests/dry-run; telegram/webhook/ntfy in Phase 4.8+)
+# Quote the "on" key — unquoted `on:` is a YAML boolean.
+# alerts:
+#   - channel: stub
+#     "on": [secret_blocked, policy_blocked]
+
 # Optional: browser CORS for Open WebUI Direct Connections.
 # cors:
 #   enabled: true

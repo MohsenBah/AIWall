@@ -55,6 +55,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/audit/` | SQLite audit event model and writer |
 | `app/storage/` | Database engine and schema migrations |
 | `app/reports/` | Family usage reports (weekly per-profile summary) |
+| `app/alerts/` | Pluggable alert dispatcher and channel notifiers |
 | `app/web/` | Server-rendered dashboard (Jinja2 + HTMX) |
 | `deploy/examples/` | Docker Compose templates (default + Open WebUI family stack) |
 | `app/config.py` | Pydantic models for `aiwall.yaml` |

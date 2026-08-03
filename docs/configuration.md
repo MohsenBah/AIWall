@@ -261,6 +261,26 @@ cors:
 
 See [Open WebUI reference](open-webui.md) for the full mapping walkthrough.
 
+### `alerts` (list)
+
+Pluggable notifiers for notable events. Each entry selects a channel and the triggers it listens for.
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `channel` | string | yes | `stub` (dry-run/tests); `telegram` / `webhook` / `ntfy` in later phases |
+| `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error` |
+| `enabled` | boolean | `true` | Skip the channel when `false` |
+
+```yaml
+alerts:
+  - channel: stub
+    "on": [secret_blocked, policy_blocked]
+```
+
+(Unquoted `on:` is treated as a YAML boolean; quote it or use `triggers:` as an alias.)
+
+Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payloads never include raw secret values.
+
 ## Environment variables
 
 | Variable | Default | Description |

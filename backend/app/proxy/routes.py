@@ -43,5 +43,6 @@ async def chat_completions(request: Request):
         request.app.state.policy_engine,
         request.app.state.cost_estimator,
         getattr(request.app.state, "profile_store", None),
+        getattr(request.app.state, "alert_dispatcher", None),
     )
     return await proxy.forward(request)

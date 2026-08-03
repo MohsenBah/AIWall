@@ -12,6 +12,8 @@ import httpx
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app.alerts.base import AlertEvent
+from app.alerts.dispatcher import AlertDispatcher, triggers_for_block
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
 from app.auth.gateway import GatewayIdentity, gateway_auth_enabled, strip_client_authorization
@@ -115,6 +117,7 @@ class ChatCompletionProxy:
         policy_engine: PolicyEngine,
         cost_estimator,
         profile_store: ProfileStore | None = None,
+        alert_dispatcher: AlertDispatcher | None = None,
     ):
         self._config = config
         self._http_client = http_client
@@ -122,6 +125,35 @@ class ChatCompletionProxy:
         self._policy_engine = policy_engine
         self._cost_estimator = cost_estimator
         self._profile_store = profile_store
+        self._alert_dispatcher = alert_dispatcher
+
+    async def _emit_block_alerts(
+        self,
+        *,
+        request_id: str,
+        policy_result: PolicyResult,
+    ) -> None:
+        if self._alert_dispatcher is None or self._alert_dispatcher.channel_count == 0:
+            return
+        triggers = triggers_for_block(
+            reason=policy_result.reason,
+            policy_id=policy_result.policy_id,
+            rule_ids=policy_result.rule_ids,
+        )
+        policy_name = policy_result.policy_id or "unknown"
+        reason = policy_result.reason or "blocked"
+        for trigger in triggers:
+            await self._alert_dispatcher.dispatch(
+                AlertEvent(
+                    trigger=trigger,
+                    title=f"AIWall {trigger.replace('_', ' ')}",
+                    message=f"Policy {policy_name} blocked a request ({reason}).",
+                    request_id=request_id,
+                    policy_id=policy_result.policy_id,
+                    reason=policy_result.reason,
+                    rule_ids=policy_result.rule_ids,
+                )
+            )
 
     def _evaluate_policy(
         self,
@@ -200,6 +232,10 @@ class ChatCompletionProxy:
                 user_id=user_id,
                 categories=categories,
             )
+            await self._emit_block_alerts(
+                request_id=request_id,
+                policy_result=policy_result,
+            )
             return policy_blocked_response(policy_result)
 
         if self._profile_store is not None and identity.profile_id is not None:
@@ -231,6 +267,10 @@ class ChatCompletionProxy:
                     policy_id=limit_check.result.policy_id,
                     user_id=user_id,
                     categories=categories,
+                )
+                await self._emit_block_alerts(
+                    request_id=request_id,
+                    policy_result=limit_check.result,
                 )
                 return policy_blocked_response(limit_check.result)
 
