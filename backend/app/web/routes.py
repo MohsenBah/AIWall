@@ -25,10 +25,18 @@ DEFAULT_SUMMARY_WINDOW_HOURS = 24
 DEFAULT_TREND_BUCKET_HOURS = 1
 DEFAULT_EXPLORER_PAGE_SIZE = 25
 EXPLORER_WINDOW_OPTIONS = (24, 72, 168, 0)  # 0 = all time
+DEFAULT_PROMPT_PAGE_SIZE = 25
 
 
 def build_templates() -> Jinja2Templates:
-    templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+    def ui_flags(request: Request) -> dict[str, object]:
+        config = request.app.state.policy_engine.reload()
+        return {"log_raw_prompts_enabled": bool(config.logging.log_raw_prompts)}
+
+    templates = Jinja2Templates(
+        directory=str(TEMPLATES_DIR),
+        context_processors=[ui_flags],
+    )
 
     def bar_height(value: float, maximum: float, *, min_px: int = 2, max_px: int = 120) -> int:
         if maximum <= 0 or value <= 0:
@@ -347,6 +355,76 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 _policies_context(request),
             )
         return RedirectResponse(url="/policies", status_code=303)
+
+    def _require_prompt_logging(request: Request) -> None:
+        config = request.app.state.policy_engine.reload()
+        request.app.state.config = config
+        if not config.logging.log_raw_prompts:
+            raise HTTPException(
+                status_code=404,
+                detail="Prompt log viewer requires logging.log_raw_prompts: true",
+            )
+
+    def _load_prompt_logs(
+        request: Request,
+        *,
+        offset: int,
+        limit: int,
+    ) -> dict[str, object]:
+        page = request.app.state.audit_writer.search_events(
+            limit=limit,
+            offset=max(0, offset),
+            has_raw_prompt=True,
+        )
+        profile_store = getattr(request.app.state, "profile_store", None)
+        profiles = profile_store.list() if profile_store is not None else []
+        profile_names = {str(p.id): p.name for p in profiles}
+        return {
+            "page": page,
+            "events": page.events,
+            "profile_names": profile_names,
+            "page_size": limit,
+        }
+
+    @router.get("/prompts", response_class=HTMLResponse)
+    async def prompt_log_viewer(
+        request: Request,
+        offset: int = 0,
+        limit: int = DEFAULT_PROMPT_PAGE_SIZE,
+    ) -> HTMLResponse:
+        _require_prompt_logging(request)
+        page_size = limit if limit >= 1 else DEFAULT_PROMPT_PAGE_SIZE
+        return templates.TemplateResponse(
+            request,
+            "prompts.html",
+            _load_prompt_logs(request, offset=offset, limit=page_size),
+        )
+
+    @router.get("/partials/prompts", response_class=HTMLResponse)
+    async def prompt_log_partial(
+        request: Request,
+        offset: int = 0,
+        limit: int = DEFAULT_PROMPT_PAGE_SIZE,
+    ) -> HTMLResponse:
+        _require_prompt_logging(request)
+        page_size = limit if limit >= 1 else DEFAULT_PROMPT_PAGE_SIZE
+        return templates.TemplateResponse(
+            request,
+            "partials/prompts_table.html",
+            _load_prompt_logs(request, offset=offset, limit=page_size),
+        )
+
+    @router.get("/partials/prompts/{event_id}/detail", response_class=HTMLResponse)
+    async def prompt_detail_partial(request: Request, event_id: int) -> HTMLResponse:
+        _require_prompt_logging(request)
+        event = request.app.state.audit_writer.get_by_id(event_id)
+        if event is None or not event.raw_prompt:
+            raise HTTPException(status_code=404, detail="Prompt not found")
+        return templates.TemplateResponse(
+            request,
+            "partials/event_detail.html",
+            event_detail_context(event, show_raw=True),
+        )
 
     return router
 

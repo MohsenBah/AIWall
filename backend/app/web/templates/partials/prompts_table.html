@@ -1,0 +1,75 @@
+{% if events %}
+<p class="muted explorer-meta">
+    Showing {{ events|length }} of {{ page.total }}
+    · page {{ page.page }} / {{ page.total_pages }}
+</p>
+<table class="events">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Time</th>
+            <th>Profile</th>
+            <th>Model</th>
+            <th>Decision</th>
+            <th>Prompt preview</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr class="event-row">
+            <td class="expand">
+                <button
+                    type="button"
+                    class="linkish"
+                    hx-get="/partials/prompts/{{ event.id }}/detail"
+                    hx-target="#prompt-detail-{{ event.id }}"
+                    hx-swap="innerHTML"
+                    aria-label="Show prompt detail"
+                >Details</button>
+            </td>
+            <td class="mono">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else '-' }}</td>
+            <td>
+                {% if event.user_id %}
+                {{ profile_names.get(event.user_id, 'profile ' ~ event.user_id) }}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mono">{{ event.model }}</td>
+            <td><span class="badge badge-{{ event.decision }}">{{ event.decision }}</span></td>
+            <td class="prompt-preview muted">{{ event.raw_prompt[:120] }}{% if event.raw_prompt and event.raw_prompt|length > 120 %}…{% endif %}</td>
+        </tr>
+        <tr class="event-detail-row">
+            <td colspan="6" id="prompt-detail-{{ event.id }}" class="event-detail-slot"></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<nav class="pager" aria-label="Prompt pages">
+    {% if page.has_prev %}
+    <button
+        type="button"
+        class="linkish"
+        hx-get="/partials/prompts"
+        hx-target="#prompts-table"
+        hx-vals='{"offset": "{{ page.prev_offset }}", "limit": "{{ page_size }}"}'
+    >Previous</button>
+    {% else %}
+    <span class="muted">Previous</span>
+    {% endif %}
+    <span class="muted">Page {{ page.page }}</span>
+    {% if page.has_next %}
+    <button
+        type="button"
+        class="linkish"
+        hx-get="/partials/prompts"
+        hx-target="#prompts-table"
+        hx-vals='{"offset": "{{ page.next_offset }}", "limit": "{{ page_size }}"}'
+    >Next</button>
+    {% else %}
+    <span class="muted">Next</span>
+    {% endif %}
+</nav>
+{% else %}
+<p class="empty">No stored prompts yet. Proxied requests will appear here when raw logging is on.</p>
+{% endif %}

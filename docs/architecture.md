@@ -68,7 +68,9 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards, usage trends, and recent events |
 | `/events` | GET | Event log explorer — filters, pagination, detail |
+| `/prompts` | GET | Prompt log viewer (404 unless `logging.log_raw_prompts: true`) |
 | `/partials/event-explorer` | GET | HTMX fragment for the event explorer table |
+| `/partials/prompts` | GET | HTMX fragment for the prompt log table |
 | `/usage` | GET | Model usage — tokens, cost, latency, volume per model/provider |
 | `/policies` | GET | Policy management — enable/disable toggles (hot reload) |
 | `/policies/{name}/enabled` | POST | Set a policy's `enabled` flag via `policy-overrides.yaml` |

@@ -13,11 +13,22 @@ def split_rule_ids(matched_rule_ids: str | None) -> list[str]:
     return [part.strip() for part in matched_rule_ids.split(",") if part.strip()]
 
 
-def event_detail_context(event: AuditEventRow) -> dict[str, object]:
-    """Build a privacy-safe detail view: rule ids and reason, never raw secrets."""
-    return {
+def event_detail_context(
+    event: AuditEventRow,
+    *,
+    show_raw: bool = False,
+) -> dict[str, object]:
+    """Build a privacy-safe detail view: rule ids and reason, never raw secrets.
+
+    When ``show_raw`` is true (prompt log viewer only), include stored prompt text
+    that was already masked at write time.
+    """
+    context: dict[str, object] = {
         "event": event,
         "rule_ids": split_rule_ids(event.matched_rule_ids),
-        # Explicitly omit raw_prompt / raw_response from the template context.
-        "show_raw": False,
+        "show_raw": show_raw,
     }
+    if show_raw:
+        context["raw_prompt"] = event.raw_prompt
+        context["raw_response"] = event.raw_response
+    return context

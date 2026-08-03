@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Prompt log{% endblock %}
+
+{% block content %}
+<section class="panel privacy-banner" role="alert">
+    <h1>Privacy warning</h1>
+    <p>
+        Raw prompt logging is enabled. This page shows stored prompt text from the audit
+        database. Secrets are masked as <span class="mono">[REDACTED:&lt;rule_id&gt;]</span>
+        at write time, but prompts may still contain personal or sensitive content.
+        Disable with <span class="mono">logging.log_raw_prompts: false</span> when you
+        no longer need this viewer.
+    </p>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Prompt log</h1>
+            <p class="muted">Events that have a stored prompt (newest first).</p>
+        </div>
+    </div>
+
+    <div id="prompts-table">
+        {% include "partials/prompts_table.html" %}
+    </div>
+</section>
+{% endblock %}

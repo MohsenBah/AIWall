@@ -13,6 +13,9 @@
         <nav class="nav">
             <a href="/">Dashboard</a>
             <a href="/events">Event log</a>
+            {% if log_raw_prompts_enabled %}
+            <a href="/prompts">Prompt log</a>
+            {% endif %}
             <a href="/usage">Model usage</a>
             <a href="/policies">Policies</a>
             <a href="/blocked">Blocked</a>

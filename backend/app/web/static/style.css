@@ -358,6 +358,43 @@ table.events th {
     border-top: 1px solid var(--border);
 }
 
+.privacy-banner {
+    margin-bottom: 1.25rem;
+    border-color: var(--warn);
+    background: rgba(210, 153, 34, 0.12);
+}
+
+.privacy-banner h1 {
+    color: var(--warn);
+}
+
+.privacy-banner p {
+    margin: 0.5rem 0 0;
+    color: var(--text);
+    line-height: 1.45;
+}
+
+.prompt-preview {
+    max-width: 28rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.prompt-text {
+    margin: 0;
+    padding: 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.85rem;
+    max-height: 20rem;
+    overflow: auto;
+}
+
 .footer {
     max-width: 1100px;
     margin: 1.5rem auto;

@@ -34,6 +34,18 @@
             <dd>{{ event.redaction_count }}</dd>
         </div>
         {% endif %}
+        {% if show_raw %}
+        <div class="detail-span">
+            <dt>Prompt</dt>
+            <dd><pre class="prompt-text">{{ raw_prompt or '(empty)' }}</pre></dd>
+        </div>
+        {% if raw_response %}
+        <div class="detail-span">
+            <dt>Response</dt>
+            <dd><pre class="prompt-text">{{ raw_response }}</pre></dd>
+        </div>
+        {% endif %}
+        {% endif %}
     </dl>
     <p class="privacy-note muted">Secret values are never shown in the dashboard.</p>
 </div>

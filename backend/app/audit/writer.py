@@ -237,6 +237,7 @@ class AuditWriter:
         user_id: str | None = None,
         since: datetime | None = None,
         until: datetime | None = None,
+        has_raw_prompt: bool = False,
     ) -> EventPage:
         """Filter and paginate audit events (newest first)."""
         from sqlalchemy import func, select
@@ -259,6 +260,8 @@ class AuditWriter:
             filters.append(AuditEventRow.timestamp >= since)
         if until is not None:
             filters.append(AuditEventRow.timestamp < until)
+        if has_raw_prompt:
+            filters.append(AuditEventRow.raw_prompt.is_not(None))
 
         with self._session_factory() as session:
             count_stmt = select(func.count()).select_from(AuditEventRow)

@@ -51,7 +51,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Policy management page | Done (Phase 4.3) |
 | Per-policy hit counts | Done (Phase 4.4) |
 | Event log explorer | Done (Phase 4.5) |
-| Prompt log viewer | Planned (Phase 4.6) |
+| Prompt log viewer | Done (Phase 4.6) |
+| Alerting core | Planned (Phase 4.7) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
