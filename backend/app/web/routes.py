@@ -177,6 +177,23 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             {"report": report},
         )
 
+    @router.get("/usage", response_class=HTMLResponse)
+    async def model_usage_page(
+        request: Request,
+        window_hours: int = DEFAULT_SUMMARY_WINDOW_HOURS,
+    ) -> HTMLResponse:
+        hours = window_hours if window_hours >= 1 else DEFAULT_SUMMARY_WINDOW_HOURS
+        report = request.app.state.audit_writer.model_usage(window_hours=hours)
+        return templates.TemplateResponse(
+            request,
+            "usage.html",
+            {
+                "report": report,
+                "window_hours": hours,
+                "window_options": (24, 72, 168),
+            },
+        )
+
     return router
 
 

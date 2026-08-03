@@ -103,6 +103,34 @@ class UsageTimeseries:
         return sum(bucket.estimated_cost for bucket in self.buckets)
 
 
+@dataclass(frozen=True)
+class ModelUsageRow:
+    provider: str
+    model: str
+    request_count: int = 0
+    total_tokens: int = 0
+    estimated_cost: float = 0.0
+    avg_latency_ms: float = 0.0
+
+
+@dataclass(frozen=True)
+class ModelUsageReport:
+    window_hours: int
+    rows: tuple[ModelUsageRow, ...] = ()
+
+    @property
+    def total_requests(self) -> int:
+        return sum(row.request_count for row in self.rows)
+
+    @property
+    def total_tokens(self) -> int:
+        return sum(row.total_tokens for row in self.rows)
+
+    @property
+    def total_estimated_cost(self) -> float:
+        return sum(row.estimated_cost for row in self.rows)
+
+
 class AuditWriter:
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -275,6 +303,65 @@ class AuditWriter:
             bucket_hours=bucket_hours,
             buckets=buckets,
         )
+
+    def model_usage(
+        self,
+        *,
+        window_hours: int = 24,
+        now: datetime | None = None,
+    ) -> ModelUsageReport:
+        """Aggregate volume, tokens, cost, and latency per provider/model."""
+        from sqlalchemy import func, select
+
+        if window_hours < 1:
+            raise ValueError("window_hours must be >= 1")
+
+        window_end = now or datetime.now(UTC)
+        if window_end.tzinfo is None:
+            window_end = window_end.replace(tzinfo=UTC)
+        else:
+            window_end = window_end.astimezone(UTC)
+        since = window_end - timedelta(hours=window_hours)
+
+        with self._session_factory() as session:
+            stmt = (
+                select(
+                    AuditEventRow.provider,
+                    AuditEventRow.model,
+                    func.count().label("request_count"),
+                    func.coalesce(func.sum(AuditEventRow.total_tokens), 0).label(
+                        "total_tokens"
+                    ),
+                    func.coalesce(func.sum(AuditEventRow.estimated_cost), 0.0).label(
+                        "estimated_cost"
+                    ),
+                    func.coalesce(func.avg(AuditEventRow.latency_ms), 0.0).label(
+                        "avg_latency_ms"
+                    ),
+                )
+                .where(AuditEventRow.timestamp >= since)
+                .group_by(AuditEventRow.provider, AuditEventRow.model)
+                .order_by(
+                    func.coalesce(func.sum(AuditEventRow.estimated_cost), 0.0).desc(),
+                    func.count().desc(),
+                    AuditEventRow.provider,
+                    AuditEventRow.model,
+                )
+            )
+            results = session.execute(stmt).all()
+
+        rows = tuple(
+            ModelUsageRow(
+                provider=row.provider,
+                model=row.model,
+                request_count=int(row.request_count),
+                total_tokens=int(row.total_tokens or 0),
+                estimated_cost=float(row.estimated_cost or 0.0),
+                avg_latency_ms=float(row.avg_latency_ms or 0.0),
+            )
+            for row in results
+        )
+        return ModelUsageReport(window_hours=window_hours, rows=rows)
 
     def usage_for_user(
         self,

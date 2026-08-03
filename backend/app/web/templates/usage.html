@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Model usage{% endblock %}
+
+{% block content %}
+<section class="panel summary">
+    <div class="panel-header">
+        <div>
+            <h1>Model usage</h1>
+            <p class="muted">Tokens, cost, latency, and volume per model and provider (last {{ report.window_hours }}h).</p>
+        </div>
+        <form class="filters" method="get" action="/usage">
+            <label>
+                Window
+                <select name="window_hours" onchange="this.form.submit()">
+                    {% for hours in window_options %}
+                    <option value="{{ hours }}" {% if window_hours == hours %}selected{% endif %}>{{ hours }}h</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    </div>
+    <div class="cards">
+        <div class="card">
+            <span class="card-label">Requests</span>
+            <span class="card-value">{{ report.total_requests }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Tokens</span>
+            <span class="card-value">{{ report.total_tokens }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Est. cost</span>
+            <span class="card-value">${{ '%.6f'|format(report.total_estimated_cost) }}</span>
+        </div>
+        <div class="card">
+            <span class="card-label">Models</span>
+            <span class="card-value">{{ report.rows|length }}</span>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    {% if report.rows %}
+    <table class="events">
+        <thead>
+            <tr>
+                <th>Provider</th>
+                <th>Model</th>
+                <th class="num">Requests</th>
+                <th class="num">Tokens</th>
+                <th class="num">Est. cost</th>
+                <th class="num">Avg latency</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in report.rows %}
+            <tr class="event-row">
+                <td>{{ row.provider }}</td>
+                <td class="mono">{{ row.model }}</td>
+                <td class="num">{{ row.request_count }}</td>
+                <td class="num">{{ row.total_tokens }}</td>
+                <td class="num">${{ '%.6f'|format(row.estimated_cost) }}</td>
+                <td class="num">{{ '%.0f ms'|format(row.avg_latency_ms) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No usage in the selected window yet.</p>
+    {% endif %}
+</section>
+{% endblock %}
