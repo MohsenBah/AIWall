@@ -68,7 +68,7 @@ scanners:
 #   enabled: true
 #   api_key_env: AIWALL_API_KEY
 
-# Optional: alert channels (stub is for tests/dry-run; webhook/ntfy in Phase 4.9+)
+# Optional: alert channels (ntfy in Phase 4.10+)
 # Quote the "on" key — unquoted `on:` is a YAML boolean.
 # alerts:
 #   - channel: stub
@@ -77,6 +77,9 @@ scanners:
 #     bot_token_env: TELEGRAM_BOT_TOKEN
 #     chat_id: "123456789"
 #     "on": [secret_blocked, policy_blocked, daily_limit]
+#   - channel: webhook
+#     url: https://ha.local/api/webhook/aiwall
+#     "on": [secret_blocked, policy_blocked]
 
 # Optional: browser CORS for Open WebUI Direct Connections.
 # cors:

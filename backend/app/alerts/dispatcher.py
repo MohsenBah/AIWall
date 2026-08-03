@@ -19,6 +19,7 @@ from app.alerts.base import (
 )
 from app.alerts.stub import RecordingNotifier
 from app.alerts.telegram import TelegramNotifier
+from app.alerts.webhook import WebhookNotifier
 from app.config import AIWallConfig, AlertChannelConfig
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ def build_alert_dispatcher(
 
     ``channel: stub`` uses an in-memory recorder (tests / dry-run).
     ``channel: telegram`` sends via the Bot API using ``bot_token_env`` + ``chat_id``.
+    ``channel: webhook`` POSTs JSON to ``url`` (Discord / Slack / Home Assistant).
     """
     channels: list[_BoundChannel] = []
     for index, entry in enumerate(config.alerts):
@@ -131,7 +133,11 @@ def _build_notifier(
             chat_id=entry.chat_id,
             http_client=http_client,
         )
-    # webhook / ntfy land in Phase 4.9–4.10.
+    if channel == "webhook":
+        if not entry.url:
+            raise ValueError("webhook channel requires url")
+        return WebhookNotifier(url=entry.url, http_client=http_client)
+    # ntfy lands in Phase 4.10.
     return None
 
 

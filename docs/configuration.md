@@ -267,11 +267,12 @@ Pluggable notifiers for notable events. Each entry selects a channel and the tri
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `channel` | string | yes | `stub` (dry-run/tests), `telegram`; `webhook` / `ntfy` in later phases |
+| `channel` | string | yes | `stub` (dry-run/tests), `telegram`, `webhook`; `ntfy` in a later phase |
 | `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error` |
 | `enabled` | boolean | `true` | Skip the channel when `false` |
 | `bot_token_env` | string | — | Env var holding the Telegram bot token (`telegram` channel) |
 | `chat_id` | string | — | Telegram chat or group id (`telegram` channel) |
+| `url` | string | — | Destination URL for `webhook` POSTs (`http://` or `https://`) |
 
 ```yaml
 alerts:
@@ -281,11 +282,16 @@ alerts:
     bot_token_env: TELEGRAM_BOT_TOKEN
     chat_id: "123456789"
     "on": [secret_blocked, policy_blocked, daily_limit]
+  - channel: webhook
+    url: https://ha.local/api/webhook/aiwall
+    "on": [secret_blocked, policy_blocked]
 ```
 
 (Unquoted `on:` is treated as a YAML boolean; quote it or use `triggers:` as an alias.)
 
 Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payloads never include raw secret values. The Telegram channel POSTs to `https://api.telegram.org/bot<token>/sendMessage`.
+
+Webhook channels POST JSON with structured fields (`source`, `trigger`, `title`, `message`, `policy_id`, `reason`, `rule_ids`, `request_id`, `metadata`) plus Slack-compatible `text` and Discord-compatible `content` strings so Discord, Slack, and Home Assistant incoming webhooks can consume the same payload.
 
 ## Environment variables
 

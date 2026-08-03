@@ -54,6 +54,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Prompt log viewer | Done (Phase 4.6) |
 | Alerting core | Done (Phase 4.7) |
 | Telegram alerts | Done (Phase 4.8) |
+| Webhook alerts | Done (Phase 4.9) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
