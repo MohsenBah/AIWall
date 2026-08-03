@@ -253,6 +253,14 @@ table.events th {
     text-decoration: underline;
 }
 
+a.linkish {
+    display: inline;
+}
+
+.explorer-meta a.linkish {
+    margin: 0 0.15rem;
+}
+
 .event-detail-slot:empty { display: none; }
 
 .event-detail {

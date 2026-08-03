@@ -13,6 +13,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.policies.overrides import set_policy_enabled
+from app.reports.export import (
+    DEFAULT_EXPORT_LIMIT,
+    ExportFilters,
+    build_event_export,
+    export_to_csv,
+    export_to_json,
+)
 from app.reports.weekly import build_weekly_report, render_markdown
 from app.web.privacy import event_detail_context
 
@@ -163,6 +170,13 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             user_id=selected_profile,
             since=since,
         )
+        export_filters = ExportFilters(
+            decision=decision or None,
+            provider=provider or None,
+            model=model or None,
+            profile=selected_profile,
+            window_hours=window_hours,
+        )
         return {
             "page": page,
             "events": page.events,
@@ -177,6 +191,7 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             "window_hours": window_hours,
             "window_options": EXPLORER_WINDOW_OPTIONS,
             "page_size": limit,
+            "export_query": export_filters.query_string(),
         }
 
     @router.get("/events", response_class=HTMLResponse)
@@ -232,6 +247,79 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 limit=page_size,
             ),
         )
+
+    @router.get("/events/export.json")
+    async def events_export_json(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        profile: str | None = None,
+        window_hours: int = 24,
+    ) -> Response:
+        report = _build_filtered_export(
+            request,
+            decision=decision,
+            provider=provider,
+            model=model,
+            profile=profile,
+            window_hours=window_hours,
+        )
+        body = export_to_json(report)
+        filename = f"aiwall-events-{report.exported_at.strftime('%Y%m%d-%H%M%S')}.json"
+        return Response(
+            content=body,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    @router.get("/events/export.csv")
+    async def events_export_csv(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        profile: str | None = None,
+        window_hours: int = 24,
+    ) -> Response:
+        report = _build_filtered_export(
+            request,
+            decision=decision,
+            provider=provider,
+            model=model,
+            profile=profile,
+            window_hours=window_hours,
+        )
+        body = export_to_csv(report)
+        filename = f"aiwall-events-{report.exported_at.strftime('%Y%m%d-%H%M%S')}.csv"
+        return Response(
+            content=body,
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    def _build_filtered_export(
+        request: Request,
+        *,
+        decision: str | None,
+        provider: str | None,
+        model: str | None,
+        profile: str | None,
+        window_hours: int,
+    ):
+        audit_writer = request.app.state.audit_writer
+        profile_store = getattr(request.app.state, "profile_store", None)
+        profiles = profile_store.list() if profile_store is not None else []
+        profile_names = {str(p.id): p.name for p in profiles}
+        selected_profile = profile if profile in profile_names else None
+        filters = ExportFilters(
+            decision=decision or None,
+            provider=provider or None,
+            model=model or None,
+            profile=selected_profile,
+            window_hours=window_hours,
+        )
+        return build_event_export(audit_writer, filters, limit=DEFAULT_EXPORT_LIMIT)
 
     def _load_blocked(request: Request, profile: str | None):
         audit_writer = request.app.state.audit_writer

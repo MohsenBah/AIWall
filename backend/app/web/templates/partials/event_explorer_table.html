@@ -2,6 +2,10 @@
 <p class="muted explorer-meta">
     Showing {{ events|length }} of {{ page.total }}
     · page {{ page.page }} / {{ page.total_pages }}
+    · export
+    <a class="linkish" href="/events/export.json?{{ export_query }}">JSON</a>
+    ·
+    <a class="linkish" href="/events/export.csv?{{ export_query }}">CSV</a>
 </p>
 <table class="events">
     <thead>
@@ -83,5 +87,11 @@
     {% else %}
     No events yet.
     {% endif %}
+</p>
+<p class="muted explorer-meta">
+    Export empty result:
+    <a class="linkish" href="/events/export.json?{{ export_query }}">JSON</a>
+    ·
+    <a class="linkish" href="/events/export.csv?{{ export_query }}">CSV</a>
 </p>
 {% endif %}

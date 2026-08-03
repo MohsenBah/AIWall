@@ -57,6 +57,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Webhook alerts | Done (Phase 4.9) |
 | ntfy alerts | Done (Phase 4.10) |
 | Heartbeat / provider-error alerts | Done (Phase 4.11) |
+| Event CSV/JSON export | Done (Phase 4.12) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

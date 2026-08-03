@@ -67,6 +67,14 @@ class AuditSummary:
 
 
 @dataclass(frozen=True)
+class FilteredEventSummary:
+    total: int = 0
+    decision_counts: dict[str, int] = field(default_factory=dict)
+    total_estimated_cost: float = 0.0
+    total_tokens: int = 0
+
+
+@dataclass(frozen=True)
 class ProfileUsage:
     request_count: int = 0
     total_tokens: int = 0
@@ -276,6 +284,58 @@ class AuditWriter:
             events = tuple(session.scalars(stmt).all())
 
         return EventPage(events=events, total=total, limit=limit, offset=offset)
+
+    def summarize_events(
+        self,
+        *,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        user_id: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> FilteredEventSummary:
+        """Aggregate totals for the same filters used by ``search_events``."""
+        from sqlalchemy import func, select
+
+        filters = []
+        if decision:
+            filters.append(AuditEventRow.decision == decision)
+        if provider:
+            filters.append(AuditEventRow.provider == provider)
+        if model:
+            filters.append(AuditEventRow.model == model)
+        if user_id:
+            filters.append(AuditEventRow.user_id == user_id)
+        if since is not None:
+            filters.append(AuditEventRow.timestamp >= since)
+        if until is not None:
+            filters.append(AuditEventRow.timestamp < until)
+
+        with self._session_factory() as session:
+            count_stmt = select(AuditEventRow.decision, func.count())
+            if filters:
+                count_stmt = count_stmt.where(*filters)
+            count_stmt = count_stmt.group_by(AuditEventRow.decision)
+            decision_counts = {
+                decision_name: int(count)
+                for decision_name, count in session.execute(count_stmt)
+            }
+
+            cost_stmt = select(func.coalesce(func.sum(AuditEventRow.estimated_cost), 0.0))
+            tokens_stmt = select(func.coalesce(func.sum(AuditEventRow.total_tokens), 0))
+            if filters:
+                cost_stmt = cost_stmt.where(*filters)
+                tokens_stmt = tokens_stmt.where(*filters)
+            total_cost = float(session.execute(cost_stmt).scalar_one() or 0.0)
+            total_tokens = int(session.execute(tokens_stmt).scalar_one() or 0)
+
+        return FilteredEventSummary(
+            total=sum(decision_counts.values()),
+            decision_counts=decision_counts,
+            total_estimated_cost=total_cost,
+            total_tokens=total_tokens,
+        )
 
     def get_by_id(self, event_id: int) -> AuditEventRow | None:
         from sqlalchemy import select

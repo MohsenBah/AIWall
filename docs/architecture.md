@@ -69,6 +69,8 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards, usage trends, and recent events |
 | `/events` | GET | Event log explorer — filters, pagination, detail |
+| `/events/export.json` | GET | Download filtered events + summary as JSON (same query filters as `/events`) |
+| `/events/export.csv` | GET | Download filtered events + summary as CSV (same query filters as `/events`) |
 | `/prompts` | GET | Prompt log viewer (404 unless `logging.log_raw_prompts: true`) |
 | `/partials/event-explorer` | GET | HTMX fragment for the event explorer table |
 | `/partials/prompts` | GET | HTMX fragment for the prompt log table |
