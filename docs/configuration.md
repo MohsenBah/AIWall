@@ -267,19 +267,25 @@ Pluggable notifiers for notable events. Each entry selects a channel and the tri
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `channel` | string | yes | `stub` (dry-run/tests); `telegram` / `webhook` / `ntfy` in later phases |
+| `channel` | string | yes | `stub` (dry-run/tests), `telegram`; `webhook` / `ntfy` in later phases |
 | `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error` |
 | `enabled` | boolean | `true` | Skip the channel when `false` |
+| `bot_token_env` | string | — | Env var holding the Telegram bot token (`telegram` channel) |
+| `chat_id` | string | — | Telegram chat or group id (`telegram` channel) |
 
 ```yaml
 alerts:
   - channel: stub
     "on": [secret_blocked, policy_blocked]
+  - channel: telegram
+    bot_token_env: TELEGRAM_BOT_TOKEN
+    chat_id: "123456789"
+    "on": [secret_blocked, policy_blocked, daily_limit]
 ```
 
 (Unquoted `on:` is treated as a YAML boolean; quote it or use `triggers:` as an alias.)
 
-Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payloads never include raw secret values.
+Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payloads never include raw secret values. The Telegram channel POSTs to `https://api.telegram.org/bot<token>/sendMessage`.
 
 ## Environment variables
 
@@ -289,6 +295,7 @@ Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payload
 | `AIWALL_PORT` | `8080` | HTTP listen port |
 | `OPENAI_API_KEY` | _(unset)_ | Used when a provider sets `api_key_env: OPENAI_API_KEY` |
 | `AIWALL_API_KEY` | _(unset)_ | Shared admin client key when `gateway_auth.enabled: true` (profile keys also accepted) |
+| `TELEGRAM_BOT_TOKEN` | _(unset)_ | Bot token when an alert channel sets `bot_token_env: TELEGRAM_BOT_TOKEN` |
 | `OLLAMA_PORT` | `11434` | Host port for Ollama in Docker Compose (`--profile ollama`) |
 
 Provider-specific keys are read from the environment variable named in `api_key_env`.

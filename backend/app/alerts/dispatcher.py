@@ -18,6 +18,7 @@ from app.alerts.base import (
     Notifier,
 )
 from app.alerts.stub import RecordingNotifier
+from app.alerts.telegram import TelegramNotifier
 from app.config import AIWallConfig, AlertChannelConfig
 
 logger = logging.getLogger(__name__)
@@ -60,8 +61,8 @@ def build_alert_dispatcher(
 ) -> AlertDispatcher:
     """Build a dispatcher from ``alerts:`` config.
 
-    Unknown channel types are skipped with a warning until Phase 4.8–4.10.
     ``channel: stub`` uses an in-memory recorder (tests / dry-run).
+    ``channel: telegram`` sends via the Bot API using ``bot_token_env`` + ``chat_id``.
     """
     channels: list[_BoundChannel] = []
     for index, entry in enumerate(config.alerts):
@@ -71,11 +72,20 @@ def build_alert_dispatcher(
         if not triggers:
             logger.warning("Alert channel %s has no valid triggers; skipping", entry.channel)
             continue
-        notifier = _build_notifier(
-            entry,
-            http_client=http_client,
-            recording_notifier=recording_notifier,
-        )
+        try:
+            notifier = _build_notifier(
+                entry,
+                http_client=http_client,
+                recording_notifier=recording_notifier,
+            )
+        except ValueError as exc:
+            logger.warning(
+                "Alert channel %r misconfigured (index %s): %s",
+                entry.channel,
+                index,
+                exc,
+            )
+            continue
         if notifier is None:
             logger.warning(
                 "Alert channel %r is not implemented yet; skipping (index %s)",
@@ -113,8 +123,15 @@ def _build_notifier(
     channel = entry.channel.strip().lower()
     if channel == "stub":
         return recording_notifier if recording_notifier is not None else RecordingNotifier()
-    # Telegram / webhook / ntfy land in Phase 4.8–4.10.
-    _ = http_client
+    if channel == "telegram":
+        if not entry.bot_token_env or not entry.chat_id:
+            raise ValueError("telegram channel requires bot_token_env and chat_id")
+        return TelegramNotifier.from_env(
+            bot_token_env=entry.bot_token_env,
+            chat_id=entry.chat_id,
+            http_client=http_client,
+        )
+    # webhook / ntfy land in Phase 4.9–4.10.
     return None
 
 
