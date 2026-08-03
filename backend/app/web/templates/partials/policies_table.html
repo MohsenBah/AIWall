@@ -1,0 +1,36 @@
+{% if policies %}
+<table class="events">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>When</th>
+            <th>Action</th>
+            <th>Enabled</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for policy in policies %}
+        <tr class="event-row">
+            <td class="mono">{{ policy.name }}</td>
+            <td class="muted mono">{{ policy.when }}</td>
+            <td><span class="badge badge-{{ policy.action if policy.action in ['allow','warn','block','redact','error'] else 'allow' }}">{{ policy.action }}</span></td>
+            <td>
+                <button
+                    type="button"
+                    class="toggle {% if policy.enabled %}toggle-on{% else %}toggle-off{% endif %}"
+                    aria-pressed="{{ 'true' if policy.enabled else 'false' }}"
+                    title="{% if policy.enabled %}Disable{% else %}Enable{% endif %} {{ policy.name }}"
+                    hx-post="/policies/{{ policy.name }}/enabled?enabled={{ 'false' if policy.enabled else 'true' }}"
+                    hx-target="#policies-table"
+                    hx-swap="innerHTML"
+                >
+                    {% if policy.enabled %}On{% else %}Off{% endif %}
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="empty">No policies configured. Add entries under <span class="mono">policies:</span> or load a preset.</p>
+{% endif %}

@@ -6,11 +6,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.policies.overrides import set_policy_enabled
 from app.reports.weekly import build_weekly_report, render_markdown
 from app.web.privacy import event_detail_context
 
@@ -193,6 +194,52 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 "window_options": (24, 72, 168),
             },
         )
+
+    def _policies_context(request: Request) -> dict[str, object]:
+        engine = request.app.state.policy_engine
+        config = engine.reload()
+        return {"policies": config.policies}
+
+    @router.get("/policies", response_class=HTMLResponse)
+    async def policies_page(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "policies.html",
+            _policies_context(request),
+        )
+
+    @router.get("/partials/policies", response_class=HTMLResponse)
+    async def policies_partial(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "partials/policies_table.html",
+            _policies_context(request),
+        )
+
+    @router.post("/policies/{policy_name}/enabled")
+    async def set_policy_enabled_route(
+        request: Request,
+        policy_name: str,
+        enabled: bool = Query(...),
+    ) -> Response:
+        engine = request.app.state.policy_engine
+        config = engine.reload()
+        known = {policy.name for policy in config.policies}
+        if policy_name not in known:
+            raise HTTPException(status_code=404, detail="Policy not found")
+
+        set_policy_enabled(request.app.state.config_path, policy_name, enabled)
+        engine.invalidate()
+        # Keep app.state.config in sync for healthz / other readers.
+        request.app.state.config = engine.reload()
+
+        if request.headers.get("hx-request") == "true":
+            return templates.TemplateResponse(
+                request,
+                "partials/policies_table.html",
+                _policies_context(request),
+            )
+        return RedirectResponse(url="/policies", status_code=303)
 
     return router
 

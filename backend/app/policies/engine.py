@@ -10,6 +10,7 @@ from pathlib import Path
 from app.config import AIWallConfig, load_config
 from app.policies.conditions import evaluate_condition
 from app.policies.context import PolicyContext
+from app.policies.overrides import policy_overrides_path
 
 
 @dataclass(frozen=True)
@@ -37,20 +38,41 @@ class PolicyEngine:
     def __init__(self, config_path: Path):
         self._config_path = config_path
         self._cached_mtime: float | None = None
+        self._cached_overrides_mtime: float | None = None
         self._cached_config: AIWallConfig | None = None
+
+    def invalidate(self) -> None:
+        """Drop cached config so the next evaluate/reload reads from disk."""
+        self._cached_mtime = None
+        self._cached_overrides_mtime = None
+        self._cached_config = None
+
+    def _source_mtimes(self) -> tuple[float | None, float | None]:
+        config_mtime = (
+            self._config_path.stat().st_mtime if self._config_path.exists() else None
+        )
+        overrides = policy_overrides_path(self._config_path)
+        overrides_mtime = overrides.stat().st_mtime if overrides.exists() else None
+        return config_mtime, overrides_mtime
 
     def reload(self) -> AIWallConfig:
         if not self._config_path.exists():
             self._cached_mtime = None
+            self._cached_overrides_mtime = None
             self._cached_config = AIWallConfig()
             return self._cached_config
 
-        mtime = self._config_path.stat().st_mtime
-        if self._cached_config is not None and self._cached_mtime == mtime:
+        config_mtime, overrides_mtime = self._source_mtimes()
+        if (
+            self._cached_config is not None
+            and self._cached_mtime == config_mtime
+            and self._cached_overrides_mtime == overrides_mtime
+        ):
             return self._cached_config
 
         config = load_config(self._config_path)
-        self._cached_mtime = mtime
+        self._cached_mtime = config_mtime
+        self._cached_overrides_mtime = overrides_mtime
         self._cached_config = config
         return config
 

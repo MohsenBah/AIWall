@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Policies{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Policies</h1>
+            <p class="muted">
+                Toggle policies on or off without restarting. Changes are saved to
+                <span class="mono">policy-overrides.yaml</span> and hot-reloaded.
+            </p>
+        </div>
+    </div>
+
+    <div id="policies-table">
+        {% include "partials/policies_table.html" %}
+    </div>
+</section>
+{% endblock %}

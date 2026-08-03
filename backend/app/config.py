@@ -124,17 +124,28 @@ def load_config(path: Path | str | None = None) -> AIWallConfig:
         raw: Any = yaml.safe_load(config_file) or {}
 
     config = AIWallConfig.model_validate(raw)
-    if not config.presets:
-        return config
+    if config.presets:
+        from app.presets import merge_preset_policies
 
-    from app.presets import merge_preset_policies
+        merged_policies = merge_preset_policies(
+            config.presets,
+            config.policies,
+            config_dir=config_path.parent,
+        )
+        config = config.model_copy(update={"policies": merged_policies})
 
-    merged_policies = merge_preset_policies(
-        config.presets,
-        config.policies,
-        config_dir=config_path.parent,
+    from app.policies.overrides import (
+        apply_policy_overrides,
+        load_policy_overrides,
+        policy_overrides_path,
     )
-    return config.model_copy(update={"policies": merged_policies})
+
+    overrides = load_policy_overrides(policy_overrides_path(config_path))
+    if overrides:
+        config = config.model_copy(
+            update={"policies": apply_policy_overrides(config.policies, overrides)}
+        )
+    return config
 
 
 def reload_config(app_config_path: Path | str | None) -> AIWallConfig:

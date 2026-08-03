@@ -107,6 +107,8 @@ Preset files live in `presets/` (and are also packaged under `app/presets/`). Ex
 | `action` | string | yes | `allow`, `warn`, `block`, or `redact` |
 | `enabled` | boolean | `true` | Skip when `false` |
 
+The control panel at `/policies` can toggle `enabled` without editing `aiwall.yaml`. Toggles are written to `policy-overrides.yaml` (beside the config, or under `data/` when that directory exists) and hot-reloaded on the next request.
+
 **Evaluation order**
 
 1. Enabled policies are scanned in file order (presets first, then explicit policies).
