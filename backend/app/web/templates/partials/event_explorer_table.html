@@ -1,0 +1,87 @@
+{% if events %}
+<p class="muted explorer-meta">
+    Showing {{ events|length }} of {{ page.total }}
+    · page {{ page.page }} / {{ page.total_pages }}
+</p>
+<table class="events">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Time</th>
+            <th>Profile</th>
+            <th>Provider</th>
+            <th>Model</th>
+            <th>Decision</th>
+            <th>Policy</th>
+            <th>Reason</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for event in events %}
+        <tr class="event-row">
+            <td class="expand">
+                <button
+                    type="button"
+                    class="linkish"
+                    hx-get="/partials/events/{{ event.id }}/detail"
+                    hx-target="#explorer-detail-{{ event.id }}"
+                    hx-swap="innerHTML"
+                    aria-label="Show event detail"
+                >Details</button>
+            </td>
+            <td class="mono">{{ event.timestamp.strftime('%Y-%m-%d %H:%M:%S') if event.timestamp else '-' }}</td>
+            <td>
+                {% if event.user_id %}
+                {{ profile_names.get(event.user_id, 'profile ' ~ event.user_id) }}
+                {% else %}
+                <span class="muted">-</span>
+                {% endif %}
+            </td>
+            <td>{{ event.provider }}</td>
+            <td class="mono">{{ event.model }}</td>
+            <td><span class="badge badge-{{ event.decision }}">{{ event.decision }}</span></td>
+            <td class="mono muted">{{ event.policy_id or '-' }}</td>
+            <td class="muted">{{ event.reason or '-' }}</td>
+        </tr>
+        <tr class="event-detail-row">
+            <td colspan="8" id="explorer-detail-{{ event.id }}" class="event-detail-slot"></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<nav class="pager" aria-label="Event pages">
+    {% if page.has_prev %}
+    <button
+        type="button"
+        class="linkish"
+        hx-get="/partials/event-explorer"
+        hx-target="#explorer-table"
+        hx-include="#explorer-filters"
+        hx-vals='{"offset": "{{ page.prev_offset }}"}'
+    >Previous</button>
+    {% else %}
+    <span class="muted">Previous</span>
+    {% endif %}
+    <span class="muted">Page {{ page.page }}</span>
+    {% if page.has_next %}
+    <button
+        type="button"
+        class="linkish"
+        hx-get="/partials/event-explorer"
+        hx-target="#explorer-table"
+        hx-include="#explorer-filters"
+        hx-vals='{"offset": "{{ page.next_offset }}"}'
+    >Next</button>
+    {% else %}
+    <span class="muted">Next</span>
+    {% endif %}
+</nav>
+{% else %}
+<p class="empty">
+    {% if selected_decision or selected_provider or selected_model or selected_profile or window_hours %}
+    No events match the current filters.
+    {% else %}
+    No events yet.
+    {% endif %}
+</p>
+{% endif %}

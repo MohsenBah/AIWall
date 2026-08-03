@@ -138,6 +138,42 @@ class PolicyHitStats:
     last_triggered: datetime | None = None
 
 
+@dataclass(frozen=True)
+class EventPage:
+    events: tuple[AuditEventRow, ...]
+    total: int
+    limit: int
+    offset: int
+
+    @property
+    def page(self) -> int:
+        if self.limit <= 0:
+            return 1
+        return (self.offset // self.limit) + 1
+
+    @property
+    def total_pages(self) -> int:
+        if self.limit <= 0:
+            return 1
+        return max(1, (self.total + self.limit - 1) // self.limit)
+
+    @property
+    def has_prev(self) -> bool:
+        return self.offset > 0
+
+    @property
+    def has_next(self) -> bool:
+        return self.offset + self.limit < self.total
+
+    @property
+    def prev_offset(self) -> int:
+        return max(0, self.offset - self.limit)
+
+    @property
+    def next_offset(self) -> int:
+        return self.offset + self.limit
+
+
 class AuditWriter:
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -181,17 +217,62 @@ class AuditWriter:
         provider: str | None = None,
         user_id: str | None = None,
     ) -> list[AuditEventRow]:
-        from sqlalchemy import select
+        page = self.search_events(
+            limit=limit,
+            offset=0,
+            decision=decision,
+            provider=provider,
+            user_id=user_id,
+        )
+        return list(page.events)
+
+    def search_events(
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        user_id: str | None = None,
+        since: datetime | None = None,
+        until: datetime | None = None,
+    ) -> EventPage:
+        """Filter and paginate audit events (newest first)."""
+        from sqlalchemy import func, select
+
+        if limit < 1:
+            raise ValueError("limit must be >= 1")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
+
+        filters = []
+        if decision:
+            filters.append(AuditEventRow.decision == decision)
+        if provider:
+            filters.append(AuditEventRow.provider == provider)
+        if model:
+            filters.append(AuditEventRow.model == model)
+        if user_id:
+            filters.append(AuditEventRow.user_id == user_id)
+        if since is not None:
+            filters.append(AuditEventRow.timestamp >= since)
+        if until is not None:
+            filters.append(AuditEventRow.timestamp < until)
 
         with self._session_factory() as session:
-            stmt = select(AuditEventRow).order_by(AuditEventRow.id.desc()).limit(limit)
-            if decision:
-                stmt = stmt.where(AuditEventRow.decision == decision)
-            if provider:
-                stmt = stmt.where(AuditEventRow.provider == provider)
-            if user_id:
-                stmt = stmt.where(AuditEventRow.user_id == user_id)
-            return list(session.scalars(stmt).all())
+            count_stmt = select(func.count()).select_from(AuditEventRow)
+            if filters:
+                count_stmt = count_stmt.where(*filters)
+            total = int(session.execute(count_stmt).scalar_one() or 0)
+
+            stmt = select(AuditEventRow).order_by(AuditEventRow.id.desc())
+            if filters:
+                stmt = stmt.where(*filters)
+            stmt = stmt.offset(offset).limit(limit)
+            events = tuple(session.scalars(stmt).all())
+
+        return EventPage(events=events, total=total, limit=limit, offset=offset)
 
     def get_by_id(self, event_id: int) -> AuditEventRow | None:
         from sqlalchemy import select
@@ -205,6 +286,15 @@ class AuditWriter:
 
         with self._session_factory() as session:
             stmt = select(AuditEventRow.provider).distinct().order_by(AuditEventRow.provider)
+            return list(session.scalars(stmt).all())
+
+    def list_models(self, *, provider: str | None = None) -> list[str]:
+        from sqlalchemy import select
+
+        with self._session_factory() as session:
+            stmt = select(AuditEventRow.model).distinct().order_by(AuditEventRow.model)
+            if provider:
+                stmt = stmt.where(AuditEventRow.provider == provider)
             return list(session.scalars(stmt).all())
 
     def summary(self, window_hours: int = 24) -> AuditSummary:

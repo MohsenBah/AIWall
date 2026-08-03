@@ -67,6 +67,8 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/v1/models` | GET | Models from configured providers (OpenAI list shape) |
 | `/healthz` | GET | Liveness, version, provider/policy counts |
 | `/` | GET | Dashboard — summary cards, usage trends, and recent events |
+| `/events` | GET | Event log explorer — filters, pagination, detail |
+| `/partials/event-explorer` | GET | HTMX fragment for the event explorer table |
 | `/usage` | GET | Model usage — tokens, cost, latency, volume per model/provider |
 | `/policies` | GET | Policy management — enable/disable toggles (hot reload) |
 | `/policies/{name}/enabled` | POST | Set a policy's `enabled` flag via `policy-overrides.yaml` |

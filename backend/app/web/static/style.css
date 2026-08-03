@@ -343,6 +343,21 @@ table.events th {
     color: var(--block);
 }
 
+.explorer-meta {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
 .footer {
     max-width: 1100px;
     margin: 1.5rem auto;

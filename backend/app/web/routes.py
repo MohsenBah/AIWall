@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, Response
@@ -22,6 +23,8 @@ STATIC_DIR = WEB_DIR / "static"
 DEFAULT_EVENT_LIMIT = 50
 DEFAULT_SUMMARY_WINDOW_HOURS = 24
 DEFAULT_TREND_BUCKET_HOURS = 1
+DEFAULT_EXPLORER_PAGE_SIZE = 25
+EXPLORER_WINDOW_OPTIONS = (24, 72, 168, 0)  # 0 = all time
 
 
 def build_templates() -> Jinja2Templates:
@@ -120,6 +123,106 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             request,
             "partials/event_detail.html",
             event_detail_context(event),
+        )
+
+    def _load_event_explorer(
+        request: Request,
+        *,
+        decision: str | None,
+        provider: str | None,
+        model: str | None,
+        profile: str | None,
+        window_hours: int,
+        offset: int,
+        limit: int,
+    ) -> dict[str, object]:
+        audit_writer = request.app.state.audit_writer
+        profile_store = getattr(request.app.state, "profile_store", None)
+        profiles = profile_store.list() if profile_store is not None else []
+        profile_names = {str(p.id): p.name for p in profiles}
+        selected_profile = profile if profile in profile_names else None
+
+        since = None
+        if window_hours > 0:
+            since = datetime.now(UTC) - timedelta(hours=window_hours)
+
+        page = audit_writer.search_events(
+            limit=limit,
+            offset=max(0, offset),
+            decision=decision or None,
+            provider=provider or None,
+            model=model or None,
+            user_id=selected_profile,
+            since=since,
+        )
+        return {
+            "page": page,
+            "events": page.events,
+            "providers": audit_writer.list_providers(),
+            "models": audit_writer.list_models(provider=provider or None),
+            "profiles": profiles,
+            "profile_names": profile_names,
+            "selected_decision": decision or None,
+            "selected_provider": provider or None,
+            "selected_model": model or None,
+            "selected_profile": selected_profile,
+            "window_hours": window_hours,
+            "window_options": EXPLORER_WINDOW_OPTIONS,
+            "page_size": limit,
+        }
+
+    @router.get("/events", response_class=HTMLResponse)
+    async def events_explorer(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        profile: str | None = None,
+        window_hours: int = 24,
+        offset: int = 0,
+        limit: int = DEFAULT_EXPLORER_PAGE_SIZE,
+    ) -> HTMLResponse:
+        page_size = limit if limit >= 1 else DEFAULT_EXPLORER_PAGE_SIZE
+        return templates.TemplateResponse(
+            request,
+            "events.html",
+            _load_event_explorer(
+                request,
+                decision=decision,
+                provider=provider,
+                model=model,
+                profile=profile,
+                window_hours=window_hours,
+                offset=offset,
+                limit=page_size,
+            ),
+        )
+
+    @router.get("/partials/event-explorer", response_class=HTMLResponse)
+    async def events_explorer_partial(
+        request: Request,
+        decision: str | None = None,
+        provider: str | None = None,
+        model: str | None = None,
+        profile: str | None = None,
+        window_hours: int = 24,
+        offset: int = 0,
+        limit: int = DEFAULT_EXPLORER_PAGE_SIZE,
+    ) -> HTMLResponse:
+        page_size = limit if limit >= 1 else DEFAULT_EXPLORER_PAGE_SIZE
+        return templates.TemplateResponse(
+            request,
+            "partials/event_explorer_table.html",
+            _load_event_explorer(
+                request,
+                decision=decision,
+                provider=provider,
+                model=model,
+                profile=profile,
+                window_hours=window_hours,
+                offset=offset,
+                limit=page_size,
+            ),
         )
 
     def _load_blocked(request: Request, profile: str | None):

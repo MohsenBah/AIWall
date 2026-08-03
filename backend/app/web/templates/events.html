@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Event log{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Event log</h1>
+            <p class="muted">Filter by decision, provider, model, profile, and time window.</p>
+        </div>
+        <form id="explorer-filters" class="filters"
+              hx-get="/partials/event-explorer"
+              hx-target="#explorer-table"
+              hx-trigger="change"
+              hx-include="this">
+            <input type="hidden" name="offset" value="0">
+            <input type="hidden" name="limit" value="{{ page_size }}">
+            <label>
+                Decision
+                <select name="decision">
+                    <option value="" {% if not selected_decision %}selected{% endif %}>All</option>
+                    <option value="allow" {% if selected_decision == 'allow' %}selected{% endif %}>Allow</option>
+                    <option value="warn" {% if selected_decision == 'warn' %}selected{% endif %}>Warn</option>
+                    <option value="block" {% if selected_decision == 'block' %}selected{% endif %}>Block</option>
+                    <option value="redact" {% if selected_decision == 'redact' %}selected{% endif %}>Redact</option>
+                    <option value="error" {% if selected_decision == 'error' %}selected{% endif %}>Error</option>
+                </select>
+            </label>
+            <label>
+                Provider
+                <select name="provider">
+                    <option value="" {% if not selected_provider %}selected{% endif %}>All</option>
+                    {% for provider_name in providers %}
+                    <option value="{{ provider_name }}" {% if selected_provider == provider_name %}selected{% endif %}>{{ provider_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Model
+                <select name="model">
+                    <option value="" {% if not selected_model %}selected{% endif %}>All</option>
+                    {% for model_name in models %}
+                    <option value="{{ model_name }}" {% if selected_model == model_name %}selected{% endif %}>{{ model_name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Profile
+                <select name="profile">
+                    <option value="" {% if not selected_profile %}selected{% endif %}>All</option>
+                    {% for p in profiles %}
+                    <option value="{{ p.id }}" {% if selected_profile == p.id|string %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Window
+                <select name="window_hours">
+                    {% for hours in window_options %}
+                    <option value="{{ hours }}" {% if window_hours == hours %}selected{% endif %}>
+                        {% if hours == 0 %}All time{% else %}{{ hours }}h{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    </div>
+
+    <div id="explorer-table">
+        {% include "partials/event_explorer_table.html" %}
+    </div>
+</section>
+{% endblock %}
