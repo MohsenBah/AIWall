@@ -267,12 +267,14 @@ Pluggable notifiers for notable events. Each entry selects a channel and the tri
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `channel` | string | yes | `stub` (dry-run/tests), `telegram`, `webhook`; `ntfy` in a later phase |
+| `channel` | string | yes | `stub`, `telegram`, `webhook`, `ntfy` |
 | `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error` |
 | `enabled` | boolean | `true` | Skip the channel when `false` |
 | `bot_token_env` | string | — | Env var holding the Telegram bot token (`telegram` channel) |
 | `chat_id` | string | — | Telegram chat or group id (`telegram` channel) |
 | `url` | string | — | Destination URL for `webhook` POSTs (`http://` or `https://`) |
+| `topic` | string | — | ntfy topic name (`ntfy` channel) |
+| `server` | string | `https://ntfy.sh` | ntfy server base URL (`ntfy` channel; self-host or public) |
 
 ```yaml
 alerts:
@@ -285,6 +287,10 @@ alerts:
   - channel: webhook
     url: https://ha.local/api/webhook/aiwall
     "on": [secret_blocked, policy_blocked]
+  - channel: ntfy
+    topic: aiwall-alerts
+    # server: https://ntfy.home.local   # optional; defaults to https://ntfy.sh
+    "on": [secret_blocked, policy_blocked]
 ```
 
 (Unquoted `on:` is treated as a YAML boolean; quote it or use `triggers:` as an alias.)
@@ -292,6 +298,8 @@ alerts:
 Blocked secret leaks emit `secret_blocked` (and `policy_blocked`). Alert payloads never include raw secret values. The Telegram channel POSTs to `https://api.telegram.org/bot<token>/sendMessage`.
 
 Webhook channels POST JSON with structured fields (`source`, `trigger`, `title`, `message`, `policy_id`, `reason`, `rule_ids`, `request_id`, `metadata`) plus Slack-compatible `text` and Discord-compatible `content` strings so Discord, Slack, and Home Assistant incoming webhooks can consume the same payload.
+
+The ntfy channel POSTs plain text to `{server}/{topic}` with `Title`, `Tags`, and `Priority` headers (secret blocks use high priority).
 
 ## Environment variables
 

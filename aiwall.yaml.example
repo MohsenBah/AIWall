@@ -68,7 +68,7 @@ scanners:
 #   enabled: true
 #   api_key_env: AIWALL_API_KEY
 
-# Optional: alert channels (ntfy in Phase 4.10+)
+# Optional: alert channels
 # Quote the "on" key — unquoted `on:` is a YAML boolean.
 # alerts:
 #   - channel: stub
@@ -79,6 +79,10 @@ scanners:
 #     "on": [secret_blocked, policy_blocked, daily_limit]
 #   - channel: webhook
 #     url: https://ha.local/api/webhook/aiwall
+#     "on": [secret_blocked, policy_blocked]
+#   - channel: ntfy
+#     topic: aiwall-alerts
+#     # server: https://ntfy.home.local
 #     "on": [secret_blocked, policy_blocked]
 
 # Optional: browser CORS for Open WebUI Direct Connections.

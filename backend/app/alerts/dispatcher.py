@@ -17,6 +17,7 @@ from app.alerts.base import (
     AlertEvent,
     Notifier,
 )
+from app.alerts.ntfy import DEFAULT_NTFY_SERVER, NtfyNotifier
 from app.alerts.stub import RecordingNotifier
 from app.alerts.telegram import TelegramNotifier
 from app.alerts.webhook import WebhookNotifier
@@ -65,6 +66,7 @@ def build_alert_dispatcher(
     ``channel: stub`` uses an in-memory recorder (tests / dry-run).
     ``channel: telegram`` sends via the Bot API using ``bot_token_env`` + ``chat_id``.
     ``channel: webhook`` POSTs JSON to ``url`` (Discord / Slack / Home Assistant).
+    ``channel: ntfy`` publishes to ``server``/``topic`` (defaults to ntfy.sh).
     """
     channels: list[_BoundChannel] = []
     for index, entry in enumerate(config.alerts):
@@ -137,7 +139,14 @@ def _build_notifier(
         if not entry.url:
             raise ValueError("webhook channel requires url")
         return WebhookNotifier(url=entry.url, http_client=http_client)
-    # ntfy lands in Phase 4.10.
+    if channel == "ntfy":
+        if not entry.topic:
+            raise ValueError("ntfy channel requires topic")
+        return NtfyNotifier(
+            topic=entry.topic,
+            server=entry.server or DEFAULT_NTFY_SERVER,
+            http_client=http_client,
+        )
     return None
 
 
