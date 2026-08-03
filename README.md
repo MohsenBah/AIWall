@@ -49,7 +49,8 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Dashboard cost + usage trends | Done (Phase 4.1) |
 | Model usage page | Done (Phase 4.2) |
 | Policy management page | Done (Phase 4.3) |
-| Per-policy hit counts | Planned (Phase 4.4) |
+| Per-policy hit counts | Done (Phase 4.4) |
+| Event log explorer | Planned (Phase 4.5) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

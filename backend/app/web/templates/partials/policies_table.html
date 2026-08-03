@@ -5,15 +5,26 @@
             <th>Name</th>
             <th>When</th>
             <th>Action</th>
+            <th class="num">Hits</th>
+            <th>Last triggered</th>
             <th>Enabled</th>
         </tr>
     </thead>
     <tbody>
         {% for policy in policies %}
+        {% set stats = policy_stats.get(policy.name) %}
         <tr class="event-row">
             <td class="mono">{{ policy.name }}</td>
             <td class="muted mono">{{ policy.when }}</td>
             <td><span class="badge badge-{{ policy.action if policy.action in ['allow','warn','block','redact','error'] else 'allow' }}">{{ policy.action }}</span></td>
+            <td class="num">{{ stats.hit_count if stats else 0 }}</td>
+            <td class="mono muted">
+                {% if stats and stats.last_triggered %}
+                {{ stats.last_triggered.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+                {% else %}
+                —
+                {% endif %}
+            </td>
             <td>
                 <button
                     type="button"

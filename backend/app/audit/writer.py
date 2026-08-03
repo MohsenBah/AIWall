@@ -131,6 +131,13 @@ class ModelUsageReport:
         return sum(row.estimated_cost for row in self.rows)
 
 
+@dataclass(frozen=True)
+class PolicyHitStats:
+    policy_id: str
+    hit_count: int = 0
+    last_triggered: datetime | None = None
+
+
 class AuditWriter:
     def __init__(self, engine: Engine):
         self._engine = engine
@@ -362,6 +369,36 @@ class AuditWriter:
             for row in results
         )
         return ModelUsageReport(window_hours=window_hours, rows=rows)
+
+    def policy_hit_stats(self) -> dict[str, PolicyHitStats]:
+        """Hit counts and last-triggered timestamps keyed by ``policy_id``."""
+        from sqlalchemy import func, select
+
+        with self._session_factory() as session:
+            stmt = (
+                select(
+                    AuditEventRow.policy_id,
+                    func.count().label("hit_count"),
+                    func.max(AuditEventRow.timestamp).label("last_triggered"),
+                )
+                .where(AuditEventRow.policy_id.is_not(None))
+                .group_by(AuditEventRow.policy_id)
+            )
+            results = session.execute(stmt).all()
+
+        stats: dict[str, PolicyHitStats] = {}
+        for policy_id, hit_count, last_triggered in results:
+            if not policy_id:
+                continue
+            triggered = last_triggered
+            if triggered is not None and triggered.tzinfo is None:
+                triggered = triggered.replace(tzinfo=UTC)
+            stats[policy_id] = PolicyHitStats(
+                policy_id=policy_id,
+                hit_count=int(hit_count),
+                last_triggered=triggered,
+            )
+        return stats
 
     def usage_for_user(
         self,

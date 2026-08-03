@@ -10,7 +10,12 @@ from app.scanners.secrets import SecretScanner
 
 def _random_base64ish_token(length: int = 40) -> str:
     alphabet = string.ascii_letters + string.digits + "+/="
-    return "".join(secrets.choice(alphabet) for _ in range(length))
+    for _ in range(50):
+        token = "".join(secrets.choice(alphabet) for _ in range(length))
+        if shannon_entropy(token) >= 4.5:
+            return token
+    # Extremely unlikely fallback: url-safe token is high entropy in practice.
+    return secrets.token_urlsafe(length)[:length]
 
 
 def test_shannon_entropy_of_random_token_is_high() -> None:

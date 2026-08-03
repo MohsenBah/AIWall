@@ -198,7 +198,11 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
     def _policies_context(request: Request) -> dict[str, object]:
         engine = request.app.state.policy_engine
         config = engine.reload()
-        return {"policies": config.policies}
+        stats = request.app.state.audit_writer.policy_hit_stats()
+        return {
+            "policies": config.policies,
+            "policy_stats": stats,
+        }
 
     @router.get("/policies", response_class=HTMLResponse)
     async def policies_page(request: Request) -> HTMLResponse:
