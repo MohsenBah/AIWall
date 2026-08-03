@@ -301,6 +301,28 @@ Webhook channels POST JSON with structured fields (`source`, `trigger`, `title`,
 
 The ntfy channel POSTs plain text to `{server}/{topic}` with `Title`, `Tags`, and `Priority` headers (secret blocks use high priority).
 
+`provider_error` fires when an upstream provider is unreachable or returns HTTP 5xx during a proxied request, and when optional heartbeat probes first detect an outage (see `heartbeat` below). Point a channel at `provider_error` to get notified of provider downtime.
+
+### `heartbeat`
+
+Optional background probes of configured providers. On the first failure for a provider, AIWall emits `provider_error` (no repeat alerts while that provider stays unhealthy). Monitor AIWall itself for gateway-down via `GET /healthz` (returns `status: ok` while the process is up; includes `unhealthy_providers` when heartbeat has run).
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Start the background probe loop |
+| `interval_seconds` | integer | `60` | Seconds between probe rounds (minimum effective interval is 5) |
+
+```yaml
+heartbeat:
+  enabled: true
+  interval_seconds: 60
+
+alerts:
+  - channel: ntfy
+    topic: aiwall-alerts
+    "on": [provider_error, secret_blocked]
+```
+
 ## Environment variables
 
 | Variable | Default | Description |

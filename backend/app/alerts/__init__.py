@@ -4,6 +4,7 @@
 
 from app.alerts.base import AlertEvent, Notifier
 from app.alerts.dispatcher import AlertDispatcher, build_alert_dispatcher
+from app.alerts.heartbeat import HeartbeatMonitor
 from app.alerts.ntfy import NtfyNotifier
 from app.alerts.stub import RecordingNotifier
 from app.alerts.telegram import TelegramNotifier
@@ -12,6 +13,7 @@ from app.alerts.webhook import WebhookNotifier
 __all__ = [
     "AlertDispatcher",
     "AlertEvent",
+    "HeartbeatMonitor",
     "Notifier",
     "NtfyNotifier",
     "RecordingNotifier",

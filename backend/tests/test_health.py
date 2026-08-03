@@ -17,3 +17,4 @@ async def test_healthz_returns_ok(client: AsyncClient) -> None:
     assert payload["service"] == "aiwall"
     assert payload["providers"] == 2
     assert payload["policies"] == 1
+    assert payload["heartbeat_enabled"] is False

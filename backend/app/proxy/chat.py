@@ -13,7 +13,11 @@ from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.alerts.base import AlertEvent
-from app.alerts.dispatcher import AlertDispatcher, triggers_for_block
+from app.alerts.dispatcher import (
+    AlertDispatcher,
+    triggers_for_block,
+    triggers_for_provider_error,
+)
 from app.audit.helpers import log_proxy_event, measure_input_length, new_request_id
 from app.audit.writer import AuditWriter
 from app.auth.gateway import GatewayIdentity, gateway_auth_enabled, strip_client_authorization
@@ -152,6 +156,36 @@ class ChatCompletionProxy:
                     policy_id=policy_result.policy_id,
                     reason=policy_result.reason,
                     rule_ids=policy_result.rule_ids,
+                )
+            )
+
+    async def _emit_provider_error_alerts(
+        self,
+        *,
+        request_id: str,
+        provider_name: str,
+        model: str,
+        reason: str,
+        status_code: int | None = None,
+    ) -> None:
+        if self._alert_dispatcher is None or self._alert_dispatcher.channel_count == 0:
+            return
+        detail = reason
+        if status_code is not None:
+            detail = f"{reason} (HTTP {status_code})"
+        for trigger in triggers_for_provider_error():
+            await self._alert_dispatcher.dispatch(
+                AlertEvent(
+                    trigger=trigger,
+                    title="AIWall provider error",
+                    message=f"Provider {provider_name} failed for model {model}: {detail}.",
+                    request_id=request_id,
+                    reason=reason,
+                    metadata={
+                        "provider": provider_name,
+                        "model": model,
+                        **({"status_code": str(status_code)} if status_code is not None else {}),
+                    },
                 )
             )
 
@@ -333,6 +367,12 @@ class ChatCompletionProxy:
                 user_id=user_id,
                 categories=categories,
             )
+            await self._emit_provider_error_alerts(
+                request_id=request_id,
+                provider_name=provider.name,
+                model=model,
+                reason="upstream_unreachable",
+            )
             raise HTTPException(
                 status_code=502,
                 detail=f"Upstream provider unreachable at {upstream_url}: {exc}",
@@ -376,6 +416,15 @@ class ChatCompletionProxy:
             user_id=user_id,
             categories=categories,
         )
+
+        if not upstream_ok and upstream_response.status_code >= 500:
+            await self._emit_provider_error_alerts(
+                request_id=request_id,
+                provider_name=provider.name,
+                model=model,
+                reason="upstream_error",
+                status_code=upstream_response.status_code,
+            )
 
         return Response(
             content=upstream_response.content,
@@ -430,6 +479,12 @@ class ChatCompletionProxy:
                 user_id=user_id,
                 categories=categories,
             )
+            await self._emit_provider_error_alerts(
+                request_id=request_id,
+                provider_name=provider_name,
+                model=model,
+                reason="upstream_unreachable",
+            )
             raise HTTPException(
                 status_code=502,
                 detail=f"Upstream provider unreachable at {upstream_url}: {exc}",
@@ -456,6 +511,14 @@ class ChatCompletionProxy:
                 user_id=user_id,
                 categories=categories,
             )
+            if upstream_response.status_code >= 500:
+                await self._emit_provider_error_alerts(
+                    request_id=request_id,
+                    provider_name=provider_name,
+                    model=model,
+                    reason="upstream_error",
+                    status_code=upstream_response.status_code,
+                )
             await upstream_response.aclose()
             return Response(
                 content=error_body,

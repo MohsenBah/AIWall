@@ -83,7 +83,13 @@ scanners:
 #   - channel: ntfy
 #     topic: aiwall-alerts
 #     # server: https://ntfy.home.local
-#     "on": [secret_blocked, policy_blocked]
+#     "on": [secret_blocked, policy_blocked, provider_error]
+
+# Optional: probe upstream providers and alert on outage (uses provider_error).
+# Point an alert channel at provider_error. Monitor AIWall itself via GET /healthz.
+# heartbeat:
+#   enabled: true
+#   interval_seconds: 60
 
 # Optional: browser CORS for Open WebUI Direct Connections.
 # cors:

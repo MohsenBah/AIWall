@@ -63,6 +63,13 @@ class AlertChannelConfig(BaseModel):
     server: str | None = None
 
 
+class HeartbeatConfig(BaseModel):
+    """Periodic upstream provider probes (fires ``provider_error`` on outage)."""
+
+    enabled: bool = False
+    interval_seconds: int = 60
+
+
 class CorsConfig(BaseModel):
     """Browser CORS for Open WebUI Direct Connections and similar clients."""
 
@@ -116,6 +123,7 @@ class AIWallConfig(BaseModel):
     pricing: PricingConfig = Field(default_factory=PricingConfig)
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
     alerts: list[AlertChannelConfig] = Field(default_factory=list)
+    heartbeat: HeartbeatConfig = Field(default_factory=HeartbeatConfig)
     cors: CorsConfig = Field(default_factory=CorsConfig)
     scanners: ScannerConfig = Field(default_factory=ScannerConfig)
 

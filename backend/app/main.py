@@ -14,6 +14,7 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.alerts import RecordingNotifier, build_alert_dispatcher
+from app.alerts.heartbeat import HeartbeatMonitor
 from app.audit.writer import AuditWriter
 from app.config import AIWallConfig, load_config, resolve_config_path
 from app.policies.engine import PolicyEngine
@@ -51,14 +52,31 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.config = load_config(resolved_path)
+        heartbeat: HeartbeatMonitor | None = None
         try:
             if http_client is not None:
+                heartbeat = HeartbeatMonitor(
+                    config=app.state.config,
+                    http_client=http_client,
+                    alert_dispatcher=app.state.alert_dispatcher,
+                )
+                app.state.heartbeat = heartbeat
+                heartbeat.start()
                 yield
             else:
                 async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
                     app.state.http_client = client
+                    heartbeat = HeartbeatMonitor(
+                        config=app.state.config,
+                        http_client=client,
+                        alert_dispatcher=app.state.alert_dispatcher,
+                    )
+                    app.state.heartbeat = heartbeat
+                    heartbeat.start()
                     yield
         finally:
+            if heartbeat is not None:
+                await heartbeat.stop()
             engine.dispose()
 
     app = FastAPI(
@@ -85,7 +103,7 @@ def create_app(
     @app.get("/healthz")
     async def healthz() -> dict[str, Any]:
         config: AIWallConfig = app.state.config
-        return {
+        payload: dict[str, Any] = {
             "status": "ok",
             "version": __version__,
             "service": "aiwall",
@@ -93,7 +111,12 @@ def create_app(
             "providers": len(config.providers),
             "policies": len(config.policies),
             "profiles": len(app.state.profile_store.list()),
+            "heartbeat_enabled": config.heartbeat.enabled,
         }
+        heartbeat = getattr(app.state, "heartbeat", None)
+        if isinstance(heartbeat, HeartbeatMonitor):
+            payload["unhealthy_providers"] = sorted(heartbeat.unhealthy_providers)
+        return payload
 
     app.include_router(proxy_router)
     _register_web(app)

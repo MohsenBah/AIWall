@@ -56,6 +56,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Telegram alerts | Done (Phase 4.8) |
 | Webhook alerts | Done (Phase 4.9) |
 | ntfy alerts | Done (Phase 4.10) |
+| Heartbeat / provider-error alerts | Done (Phase 4.11) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
