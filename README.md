@@ -2,95 +2,39 @@
 
 Self-hosted AI security gateway for homelabs, developers, and teams.
 
-AIWall sits between your applications and AI providers and gives you visibility, policy enforcement, secret scanning, audit logging, and cost tracking — on your own hardware, without paying for big-tech cloud solutions.
+AIWall sits between your apps and AI providers. You get visibility, policy enforcement, secret scanning, audit logging, and cost tracking — on your own hardware, without renting someone else's cloud.
 
 > AIWall is to AI traffic what Firewalla is to home networks.
 
-## Status
+## Where things stand
 
-**Phase 1 (Community MVP) is complete.** Phase 2 (secret scanning) is complete. **Phase 3 (family mode) is complete.**
+The Community gateway is in good shape for day-to-day use: OpenAI-compatible proxy, policies, secret scanning, family profiles, the control panel, alerts, and agent tool guardrails (shell/file risk + approve/deny).
 
-| Component | Status |
-|---|---|
-| FastAPI skeleton + `/healthz` + config loader | Done (Phase 1.1) |
-| OpenAI-compatible proxy (`/v1/chat/completions`, SSE streaming) | Done (Phase 1.2) |
-| Ollama adapter + provider router | Done (Phase 1.3) |
-| Audit logging (SQLite) | Done (Phase 1.4) |
-| Policy engine (allow / warn / block / redact) | Done (Phase 1.5 + 2.4) |
-| Secret scanning | Done (Phase 1.6) |
-| Token counting + cost estimation | Done (Phase 1.7) |
-| Web dashboard (events, summary, HTMX filters) | Done (Phase 1.8) |
-| Docker image + Compose + healthcheck | Done (Phase 1.9) |
-| Demo script + README quickstart | Done (Phase 1.10b) |
-| Architecture + configuration docs | Done (Phase 1.10c) |
-| `GET /v1/models` | Done (Phase 1.11) |
-| Optional gateway auth (`gateway_auth`) | Done (Phase 1.12) |
-| CI + lint (ruff, GitHub Actions) | Done (Phase 1.13) |
-| Policy engine reload caching | Done (Phase 1.14) |
-| Secret scanner rule pack expansion | Done (Phase 2.1) |
-| Entropy-based secret detection | Done (Phase 2.2) |
-| False-positive tuning (allowlists) | Done (Phase 2.3) |
-| Redact matched secrets before forward | Done (Phase 2.4) |
-| Privacy-safe block responses (rule ids) | Done (Phase 2.5) |
-| `.env` / pasted-config heuristics | Done (Phase 2.6) |
-| Developer guardrail policy preset | Done (Phase 2.7) |
-| Secret events in dashboard detail | Done (Phase 2.8) |
-| Secret scanning docs + test corpus | Done (Phase 2.9) |
-| Profile model + storage | Done (Phase 3.1) |
-| Per-profile API keys + audit attribution | Done (Phase 3.2) |
-| Role-based policy conditions | Done (Phase 3.3) |
-| Child policy preset | Done (Phase 3.4) |
-| Daily usage limits per profile | Done (Phase 3.5) |
-| Category tagging + per-profile aggregation | Done (Phase 3.6) |
-| Blocked-event review per profile | Done (Phase 3.7) |
-| Weekly family report | Done (Phase 3.8) |
-| Reference Open WebUI + AIWall deploy | Done (Phase 3.9) |
-| Family-mode docs + coverage | Done (Phase 3.10) |
-| Dashboard cost + usage trends | Done (Phase 4.1) |
-| Model usage page | Done (Phase 4.2) |
-| Policy management page | Done (Phase 4.3) |
-| Per-policy hit counts | Done (Phase 4.4) |
-| Event log explorer | Done (Phase 4.5) |
-| Prompt log viewer | Done (Phase 4.6) |
-| Alerting core | Done (Phase 4.7) |
-| Telegram alerts | Done (Phase 4.8) |
-| Webhook alerts | Done (Phase 4.9) |
-| ntfy alerts | Done (Phase 4.10) |
-| Heartbeat / provider-error alerts | Done (Phase 4.11) |
-| Event CSV/JSON export | Done (Phase 4.12) |
-| Settings page | Done (Phase 4.13) |
-| Agent action event model | Done (Phase 5.1) |
-| Tool/function-call classification | Done (Phase 5.2) |
-| Command risk scoring | Done (Phase 5.3) |
-| Dangerous-command policy | Done (Phase 5.4) |
-| Sensitive file-access monitoring | Done (Phase 5.5) |
-| Approval workflow (hold / approve / deny) | Done (Phase 5.6) |
-| Agent dashboard (action log + approvals) | Done (Phase 5.7) |
-| Agent guardrails docs + coverage | Done (Phase 5.8) |
-| Web control panel (policy toggles, alerts) | Planned (Phase 4) |
+Still in progress:
 
+- Detection packs (Wazuh, Sigma, Grafana) in [AIWall-detections](https://github.com/MohsenBah/AIWall-detections)
+- Red-team payloads and regression checks in [AIWall-redteam](https://github.com/MohsenBah/AIWall-redteam)
 
+## What AIWall does
 
-## What AIWall Does
+- Proxies AI API traffic — drop-in OpenAI-compatible endpoint for clients, scripts, and coding tools (Cursor, Claude Code, Continue.dev)
+- Scans for secrets — API keys, tokens, SSH keys, pasted `.env` content, before they hit a provider
+- Enforces policies — allow, warn, block, or redact; toggle from the GUI
+- Guards agent tools — scores shell commands, flags sensitive file access, holds risky actions for approve/deny
+- Control panel — dashboard, event log, usage, cost, policies, agent approvals
+- Alerts — Telegram, webhook, or ntfy when something risky is blocked (or held for approval)
+- Audit log — privacy-preserving by default; raw prompts only if you opt in
+- Cost tracking — tokens and estimated spend by provider and model
 
-- **Proxies AI API traffic** — drop-in OpenAI-compatible endpoint for clients, scripts, and coding tools (Cursor, Claude Code, Continue.dev)
-- **Scans for secrets** — detect API keys, tokens, SSH keys, and `.env` content before they reach a provider
-- **Enforces policies** — allow, warn, block, or redact based on rules you can toggle from the GUI
-- **Guards agent tools** — score shell commands, flag sensitive file access, and hold risky actions for approve/deny
-- **Shows everything in a web control panel** — dashboard, event log, model usage, cost breakdown, policy management
-- **Alerts you** — Telegram, webhook, or ntfy notification when something risky is blocked
-- **Logs decisions** — privacy-preserving audit trail (raw prompts logged only if you opt in)
-- **Tracks cost** — token counts and estimated spend by provider and model
+## What AIWall does not do
 
-## What AIWall Does Not Do
+AIWall only sees traffic from clients you control — anything with a configurable base URL, or that you self-host. It cannot watch commercial chatbot apps on phones (ChatGPT, Character.AI, Gemini): those pin TLS and give you no endpoint to point here. For on-device app limits, use Screen Time, Family Link, or MDM.
 
-AIWall governs traffic from clients you control — anything with a configurable base URL or that you self-host. It **cannot** monitor or control commercial chatbot apps on phones (ChatGPT app, Character.AI, Gemini): those use pinned TLS certificates with no configurable endpoint. On-device app control belongs to Apple Screen Time, Google Family Link, and MDM tools.
+## Family use (self-hosted)
 
-## Family Use (Self-Hosted)
+If you run your own AI stack, give household members profiles: a child on Open WebUI (or similar) routed through AIWall gets per-profile policies, daily limits, and usage summaries. You control the client, so no traffic interception is needed.
 
-If you run your own AI stack, AIWall supports household profiles: give a child an account on your self-hosted chat UI (e.g. Open WebUI) routed through AIWall, with per-profile policies, daily limits, and usage summaries. The parent controls the client, so no traffic interception is needed.
-
-See [docs/family-mode.md](docs/family-mode.md) for profiles, keys, and limits, and [docs/open-webui.md](docs/open-webui.md) for the reference Compose stack.
+Details: [docs/family-mode.md](docs/family-mode.md). Compose stack: [docs/open-webui.md](docs/open-webui.md).
 
 ## Editions
 
@@ -98,23 +42,23 @@ See [docs/family-mode.md](docs/family-mode.md) for profiles, keys, and limits, a
 |---|---|---|
 | **AIWall Community** | Apache-2.0 (this repo) | Homelab users, developers, self-hosters |
 | **AIWall Pro** | Commercial | Power users, small teams, consultants |
-| **AIWall Enterprise** | Commercial | Regulated organizations, security teams |
+| **AIWall Enterprise** | Commercial | Regulated orgs, security teams |
 
-Community edition is designed to be genuinely useful on its own. Pro and Enterprise features ship as separate modules.
+Community is meant to be useful on its own. Pro and Enterprise ship as separate modules.
 
-## Related Repositories
+## Related repositories
 
 | Repository | Purpose |
 |---|---|
-| [AIWall](https://github.com/MohsenBah/AIWall) | Core product — proxy, policies, control panel |
-| [AIWall-detections](https://github.com/MohsenBah/AIWall-detections) | Wazuh rules, Sigma rules, Grafana dashboards, SIEM content |
-| [AIWall-redteam](https://github.com/MohsenBah/AIWall-redteam) | Adversarial testing payloads and mitigation validation |
+| [AIWall](https://github.com/MohsenBah/AIWall) | Core gateway — proxy, policies, control panel |
+| [AIWall-detections](https://github.com/MohsenBah/AIWall-detections) | Wazuh / Sigma / Grafana / SIEM content |
+| [AIWall-redteam](https://github.com/MohsenBah/AIWall-redteam) | Attack payloads and mitigation checks |
 
-## Quick Start (~15 minutes)
+## Quick start (~15 minutes)
 
 Get AIWall running, proxy a request, trigger a secret block, and see it on the dashboard.
 
-### 1. Start AIWall (Docker — recommended)
+### 1. Start AIWall (Docker)
 
 ```bash
 git clone https://github.com/MohsenBah/AIWall.git
@@ -123,13 +67,13 @@ docker compose -f deploy/docker-compose.yml up --build -d
 curl http://127.0.0.1:8080/healthz
 ```
 
-Optional: add local Ollama for `llama*` models:
+Optional local Ollama for `llama*` models:
 
 ```bash
 docker compose -f deploy/docker-compose.yml --profile ollama up --build -d
 ```
 
-Copy `deploy/.env.example` to `.env` to set `OPENAI_API_KEY`, `AIWALL_PORT`, or other secrets.
+Copy `deploy/.env.example` to `.env` for `OPENAI_API_KEY`, `AIWALL_PORT`, and other secrets.
 
 ### 2. Run the demo
 
@@ -137,27 +81,25 @@ Copy `deploy/.env.example` to `.env` to set `OPENAI_API_KEY`, `AIWALL_PORT`, or 
 ./scripts/demo.sh
 ```
 
-This sends one normal request and one secret-leak request, then prints recent audit rows. The secret request should return **HTTP 403** with `policy_blocked`.
+Sends one normal request and one secret-leak request, then prints recent audit rows. The secret request should return **HTTP 403** with `policy_blocked`.
 
-For a successful **allow** row, set `OPENAI_API_KEY` or run with the Ollama profile.
+For a successful **allow** row, set `OPENAI_API_KEY` or use the Ollama profile.
 
 ### 3. Open the dashboard
 
-Visit [http://127.0.0.1:8080/](http://127.0.0.1:8080/) — summary cards (requests, allow/warn/block counts, estimated cost) and a filterable event log.
+[http://127.0.0.1:8080/](http://127.0.0.1:8080/) — summary cards and a filterable event log.
 
 ![AIWall dashboard](docs/screenshots/dashboard.svg)
 
-You should see at least one **block** row with reason `secret-detected` after running the demo.
+After the demo you should see at least one **block** with reason `secret-detected`.
 
 ### 4. Point a client at AIWall
 
-Use AIWall as your OpenAI-compatible base URL:
+Base URL:
 
 ```text
 http://127.0.0.1:8080/v1
 ```
-
-Example with curl:
 
 ```bash
 curl http://127.0.0.1:8080/v1/chat/completions \
@@ -166,16 +108,16 @@ curl http://127.0.0.1:8080/v1/chat/completions \
   -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"hello"}]}'
 ```
 
-Coding tools (Cursor, Continue.dev, etc.): set the OpenAI base URL to `http://127.0.0.1:8080/v1` instead of `https://api.openai.com/v1`.
+In Cursor / Continue.dev / similar tools, set the OpenAI base URL to that same `/v1` endpoint.
 
-### Local development (without Docker)
+### Local development (no Docker)
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-cp aiwall.yaml.example aiwall.yaml   # optional: customize providers/policies
-cp prices.yaml.example prices.yaml   # optional: cost estimation
+cp aiwall.yaml.example aiwall.yaml   # optional
+cp prices.yaml.example prices.yaml   # optional
 ./scripts/dev.sh
 ```
 
@@ -186,19 +128,19 @@ curl http://127.0.0.1:8080/healthz
 ./scripts/demo.sh
 ```
 
-SQLite audit data is stored at `data/aiwall.db` by default.
+Audit DB defaults to `data/aiwall.db`.
 
 ### Environment variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `AIWALL_CONFIG` | `aiwall.yaml` (local) / `/app/aiwall.yaml` (Docker) | Path to the AIWall YAML config file |
-| `AIWALL_PORT` | `8080` | HTTP port for the proxy and dashboard |
-| `OPENAI_API_KEY` | _(unset)_ | API key forwarded to the OpenAI-compatible provider |
-| `AIWALL_API_KEY` | _(unset)_ | Client key required when `gateway_auth.enabled: true` |
-| `OLLAMA_PORT` | `11434` | Host port when running Ollama via `--profile ollama` |
+| `AIWALL_CONFIG` | `aiwall.yaml` (local) / `/app/aiwall.yaml` (Docker) | Config file path |
+| `AIWALL_PORT` | `8080` | Proxy + dashboard port |
+| `OPENAI_API_KEY` | _(unset)_ | Upstream OpenAI-compatible key |
+| `AIWALL_API_KEY` | _(unset)_ | Client key when `gateway_auth.enabled: true` |
+| `OLLAMA_PORT` | `11434` | Host port with `--profile ollama` |
 
-Edit `deploy/examples/aiwall.docker.yaml` (Docker) or `aiwall.yaml` (local) for providers and policies. Docker persists audit data in the `aiwall_data` volume.
+Providers and policies live in `deploy/examples/aiwall.docker.yaml` (Docker) or `aiwall.yaml` (local). Docker keeps audit data in the `aiwall_data` volume.
 
 ## Architecture
 
@@ -210,29 +152,35 @@ AIWall Proxy  (/v1/chat/completions, /healthz, dashboard at /)
     |
     +-- Policy Engine
     +-- Secret Scanner
+    +-- Agent Guardrails
     +-- Cost Estimator
     +-- Provider Router
-    +-- Audit Logger ----> Web Control Panel + Alerts (planned)
+    +-- Audit Logger ----> Control panel + alerts
     |
     v
 AI Provider (OpenAI-compatible, Ollama, ...)
 ```
 
-**Stack:** Python 3.12, FastAPI, SQLite, Jinja2 + HTMX control panel, Docker.
+Stack: Python 3.12, FastAPI, SQLite, Jinja2 + HTMX, Docker.
 
 ## Configuration
 
-Clients point their base URL to AIWall:
+Point clients at:
 
 ```text
 http://aiwall-host:8080/v1
 ```
 
-Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema, [docs/secret-scanning.md](docs/secret-scanning.md) for detectors, [docs/agent-guardrails.md](docs/agent-guardrails.md) for agent tool/shell/file guardrails, and [docs/architecture.md](docs/architecture.md) for request flow.
+Tune providers and policies in `aiwall.yaml`. Deeper reading:
+
+- [docs/configuration.md](docs/configuration.md) — schema
+- [docs/secret-scanning.md](docs/secret-scanning.md) — detectors
+- [docs/agent-guardrails.md](docs/agent-guardrails.md) — tool / shell / file guardrails
+- [docs/architecture.md](docs/architecture.md) — request flow
 
 ## Contributing
 
-Contributions are welcome once the project scaffold lands. External contributions will use a Developer Certificate of Origin (DCO) sign-off — no CLA required.
+Issues and PRs are welcome. External contributions use a Developer Certificate of Origin (DCO) sign-off — no CLA.
 
 ## License
 
@@ -240,4 +188,4 @@ Contributions are welcome once the project scaffold lands. External contribution
 
 ## Background
 
-AIWall builds on ideas explored in [MedSecLab](https://github.com/MohsenBah/MedSecLab) — a simulated healthcare AI security lab — and productizes them for homelab, developer, and enterprise use.
+AIWall grew out of work on [MedSecLab](https://github.com/MohsenBah/MedSecLab), a simulated healthcare AI security lab. This repo turns those ideas into something you can run at home or at work.
