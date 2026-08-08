@@ -4,6 +4,11 @@
 
 from app.agents.classify import classify_function_call, parse_tool_arguments
 from app.agents.extract import extract_agent_actions_from_body
+from app.agents.guardrails import (
+    evaluate_shell_guardrails,
+    max_shell_risk_from_body,
+    merge_policy_results,
+)
 from app.agents.models import AgentActionRow
 from app.agents.risk import (
     RISK_CRITICAL,
@@ -34,7 +39,10 @@ __all__ = [
     "RISK_LOW",
     "RISK_MEDIUM",
     "classify_function_call",
+    "evaluate_shell_guardrails",
     "extract_agent_actions_from_body",
+    "max_shell_risk_from_body",
+    "merge_policy_results",
     "parse_tool_arguments",
     "score_shell_command",
 ]

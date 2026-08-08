@@ -323,6 +323,28 @@ alerts:
     "on": [provider_error, secret_blocked]
 ```
 
+### `agent_guardrails`
+
+Optional shell-command guardrails for agent tool calls. When enabled, AIWall scores shell actions and applies the first matching band (highest severity wins):
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | boolean | `false` | Enforce shell risk thresholds |
+| `shell.warn_above` | integer | `40` | Warn when risk score ≥ this value |
+| `shell.block_above` | integer | `70` | Block when risk score ≥ this value |
+| `shell.require_approval_above` | integer | `90` | Require approval (HTTP 403 `approval_required`) when risk score ≥ this value |
+
+```yaml
+agent_guardrails:
+  enabled: true
+  shell:
+    warn_above: 40
+    block_above: 70
+    require_approval_above: 90
+```
+
+Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical (`approval_required` until the Phase 5.6 approval workflow holds and releases requests).
+
 ## Environment variables
 
 | Variable | Default | Description |

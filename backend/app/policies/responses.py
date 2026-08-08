@@ -14,20 +14,31 @@ POLICY_ACTION_HEADER = "X-AIWall-Policy-Action"
 
 def policy_blocked_response(result: PolicyResult) -> JSONResponse:
     policy_name = result.policy_id or "unknown"
-    error: dict[str, object] = {
-        "message": f"Request blocked by AIWall policy: {policy_name}",
-        "type": "policy_blocked",
-        "code": "policy_blocked",
-        "policy": policy_name,
-        "reason": result.reason,
-    }
+    if result.action == "require_approval":
+        error: dict[str, object] = {
+            "message": f"Request requires approval by AIWall policy: {policy_name}",
+            "type": "approval_required",
+            "code": "approval_required",
+            "policy": policy_name,
+            "reason": result.reason,
+        }
+        action_header = "require_approval"
+    else:
+        error = {
+            "message": f"Request blocked by AIWall policy: {policy_name}",
+            "type": "policy_blocked",
+            "code": "policy_blocked",
+            "policy": policy_name,
+            "reason": result.reason,
+        }
+        action_header = "block"
     if result.rule_ids:
         error["rule_ids"] = list(result.rule_ids)
 
     headers: dict[str, str] = {}
     if result.rule_ids:
         headers[RULE_IDS_HEADER] = ",".join(result.rule_ids)
-    headers[POLICY_ACTION_HEADER] = "block"
+    headers[POLICY_ACTION_HEADER] = action_header
 
     return JSONResponse(
         status_code=403,
@@ -39,7 +50,7 @@ def policy_blocked_response(result: PolicyResult) -> JSONResponse:
 def privacy_safe_headers(result: PolicyResult) -> dict[str, str]:
     """Headers that surface policy/rule metadata without secret values."""
     headers: dict[str, str] = {}
-    if result.action in {"warn", "redact"}:
+    if result.action in {"warn", "redact", "require_approval"}:
         headers[POLICY_ACTION_HEADER] = result.action
     if result.rule_ids:
         headers[RULE_IDS_HEADER] = ",".join(result.rule_ids)

@@ -70,6 +70,22 @@ class HeartbeatConfig(BaseModel):
     interval_seconds: int = 60
 
 
+class ShellGuardrailConfig(BaseModel):
+    """Risk-score thresholds for shell agent actions (inclusive)."""
+
+    # Defaults: warn at medium, block at high, require approval at critical.
+    warn_above: int = 40
+    block_above: int = 70
+    require_approval_above: int = 90
+
+
+class AgentGuardrailsConfig(BaseModel):
+    """Phase 5 agent tool/command guardrails."""
+
+    enabled: bool = False
+    shell: ShellGuardrailConfig = Field(default_factory=ShellGuardrailConfig)
+
+
 class CorsConfig(BaseModel):
     """Browser CORS for Open WebUI Direct Connections and similar clients."""
 
@@ -124,6 +140,7 @@ class AIWallConfig(BaseModel):
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
     alerts: list[AlertChannelConfig] = Field(default_factory=list)
     heartbeat: HeartbeatConfig = Field(default_factory=HeartbeatConfig)
+    agent_guardrails: AgentGuardrailsConfig = Field(default_factory=AgentGuardrailsConfig)
     cors: CorsConfig = Field(default_factory=CorsConfig)
     scanners: ScannerConfig = Field(default_factory=ScannerConfig)
 
