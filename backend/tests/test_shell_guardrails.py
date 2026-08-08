@@ -96,6 +96,7 @@ async def test_proxy_blocks_high_risk_shell_when_configured(
         extra_yaml="""
 agent_guardrails:
   enabled: true
+  approval_timeout_seconds: 1
   shell:
     warn_above: 40
     block_above: 70
@@ -148,6 +149,7 @@ agent_guardrails:
                     }
                 ],
             },
+            timeout=5.0,
         )
         allowed = await client.post(
             "/v1/chat/completions",
@@ -178,8 +180,10 @@ agent_guardrails:
 
     assert approval.status_code == 403
     assert approval.json()["error"]["code"] == "approval_required"
+    assert approval.json()["error"]["reason"] == "approval-timeout"
     assert approval.json()["error"]["policy"] == "agent-shell-require-approval"
     assert approval.headers.get("x-aiwall-policy-action") == "require_approval"
+    assert "approval_id" in approval.json()["error"]
 
     assert allowed.status_code == 200
     await http_client.aclose()

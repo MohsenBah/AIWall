@@ -45,6 +45,7 @@ def create_engine_from_config(config: AIWallConfig) -> Engine:
 
 def init_db(engine: Engine) -> None:
     # Import models so create_all registers every table on Base.metadata.
+    from app.agents import approval_models as _approval_models  # noqa: F401
     from app.agents import models as _agent_models  # noqa: F401
     from app.profiles import models as _profile_models  # noqa: F401
 
@@ -52,6 +53,7 @@ def init_db(engine: Engine) -> None:
     _migrate_audit_schema(engine)
     _ensure_profiles_table(engine)
     _ensure_agent_actions_table(engine)
+    _ensure_pending_approvals_table(engine)
 
 
 def _migrate_audit_schema(engine: Engine) -> None:
@@ -89,6 +91,16 @@ def _ensure_agent_actions_table(engine: Engine) -> None:
         if "agent_actions" in tables:
             return
     Base.metadata.create_all(engine, tables=[Base.metadata.tables["agent_actions"]])
+
+
+def _ensure_pending_approvals_table(engine: Engine) -> None:
+    """Create pending_approvals table on existing databases that predate Phase 5.6."""
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        tables = {row[0] for row in rows}
+        if "pending_approvals" in tables:
+            return
+    Base.metadata.create_all(engine, tables=[Base.metadata.tables["pending_approvals"]])
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:

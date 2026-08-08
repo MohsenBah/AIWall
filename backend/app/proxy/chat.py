@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from collections.abc import AsyncIterator, Mapping
@@ -12,8 +13,12 @@ import httpx
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app.agents.approval_broker import ApprovalBroker
+from app.agents.approval_models import APPROVAL_APPROVED, APPROVAL_DENIED, APPROVAL_PENDING
+from app.agents.approval_store import ApprovalStore
+from app.agents.approval_summary import summarize_agent_actions
 from app.agents.guardrails import evaluate_agent_guardrails, merge_policy_results
-from app.alerts.base import AlertEvent
+from app.alerts.base import TRIGGER_APPROVAL_REQUIRED, AlertEvent
 from app.alerts.dispatcher import (
     AlertDispatcher,
     triggers_for_block,
@@ -123,6 +128,8 @@ class ChatCompletionProxy:
         cost_estimator,
         profile_store: ProfileStore | None = None,
         alert_dispatcher: AlertDispatcher | None = None,
+        approval_store: ApprovalStore | None = None,
+        approval_broker: ApprovalBroker | None = None,
     ):
         self._config = config
         self._http_client = http_client
@@ -131,6 +138,8 @@ class ChatCompletionProxy:
         self._cost_estimator = cost_estimator
         self._profile_store = profile_store
         self._alert_dispatcher = alert_dispatcher
+        self._approval_store = approval_store
+        self._approval_broker = approval_broker
 
     async def _emit_block_alerts(
         self,
@@ -159,6 +168,90 @@ class ChatCompletionProxy:
                     rule_ids=policy_result.rule_ids,
                 )
             )
+
+    async def _emit_approval_alert(
+        self,
+        *,
+        request_id: str,
+        approval_id: int,
+        policy_result: PolicyResult,
+        summary: str,
+    ) -> None:
+        if self._alert_dispatcher is None or self._alert_dispatcher.channel_count == 0:
+            return
+        await self._alert_dispatcher.dispatch(
+            AlertEvent(
+                trigger=TRIGGER_APPROVAL_REQUIRED,
+                title="AIWall approval required",
+                message=(
+                    f"Approval #{approval_id} pending: {summary} "
+                    f"(policy {policy_result.policy_id or 'unknown'})."
+                ),
+                request_id=request_id,
+                policy_id=policy_result.policy_id,
+                reason=policy_result.reason,
+                rule_ids=policy_result.rule_ids,
+                metadata={"approval_id": str(approval_id)},
+            )
+        )
+
+    async def _await_approval(
+        self,
+        *,
+        request_id: str,
+        policy_result: PolicyResult,
+        provider_name: str,
+        model: str,
+        user_id: str | None,
+        body: bytes,
+        timeout_seconds: int,
+    ) -> tuple[str, int]:
+        """Create a pending approval, notify, and wait for a decision.
+
+        Returns ``(decision, approval_id)`` where decision is approved/denied/timed_out.
+        """
+        if self._approval_store is None or self._approval_broker is None:
+            return APPROVAL_DENIED, 0
+
+        summary = summarize_agent_actions(body)
+        pending = self._approval_store.create(
+            request_id=request_id,
+            policy_id=policy_result.policy_id,
+            reason=policy_result.reason,
+            rule_ids=policy_result.rule_ids,
+            summary=summary,
+            provider=provider_name,
+            model=model,
+            user_id=user_id,
+        )
+        await self._emit_approval_alert(
+            request_id=request_id,
+            approval_id=pending.id,
+            policy_result=policy_result,
+            summary=summary,
+        )
+        future = self._approval_broker.register(pending.id)
+        # Approve/deny may race between create and register; honor store state.
+        current = self._approval_store.get(pending.id)
+        if current is not None and current.status != APPROVAL_PENDING:
+            self._approval_broker.resolve(pending.id, current.status)
+            return current.status, pending.id
+        try:
+            decision = await asyncio.wait_for(
+                asyncio.shield(future),
+                timeout=max(1, timeout_seconds),
+            )
+            return str(decision), pending.id
+        except TimeoutError:
+            self._approval_broker.discard(pending.id)
+            try:
+                self._approval_store.timeout(pending.id)
+            except Exception:
+                pass
+            return "timed_out", pending.id
+        except asyncio.CancelledError:
+            self._approval_broker.discard(pending.id)
+            raise
 
     async def _emit_provider_error_alerts(
         self,
@@ -254,7 +347,7 @@ class ChatCompletionProxy:
             category_result=category_result,
         )
 
-        if policy_result.action in {"block", "require_approval"}:
+        if policy_result.action == "block":
             latency_ms = (time.perf_counter() - started) * 1000.0
             log_proxy_event(
                 self._audit_writer,
@@ -278,6 +371,62 @@ class ChatCompletionProxy:
                 policy_result=policy_result,
             )
             return policy_blocked_response(policy_result)
+
+        if policy_result.action == "require_approval":
+            fresh = self._policy_engine.reload()
+            timeout_seconds = fresh.agent_guardrails.approval_timeout_seconds
+            decision, approval_id = await self._await_approval(
+                request_id=request_id,
+                policy_result=policy_result,
+                provider_name=provider.name,
+                model=model,
+                user_id=user_id,
+                body=body,
+                timeout_seconds=timeout_seconds,
+            )
+            if decision != APPROVAL_APPROVED:
+                deny_reason = (
+                    "approval-denied"
+                    if decision == APPROVAL_DENIED
+                    else "approval-timeout"
+                )
+                latency_ms = (time.perf_counter() - started) * 1000.0
+                log_proxy_event(
+                    self._audit_writer,
+                    self._config,
+                    request_id=request_id,
+                    provider_name=provider.name,
+                    model=model,
+                    decision="block",
+                    reason=deny_reason,
+                    input_length=input_length,
+                    output_length=0,
+                    latency_ms=latency_ms,
+                    body=body,
+                    policy_id=policy_result.policy_id,
+                    rule_ids=policy_result.rule_ids,
+                    user_id=user_id,
+                    categories=categories,
+                )
+                await self._emit_block_alerts(
+                    request_id=request_id,
+                    policy_result=PolicyResult(
+                        action="block",
+                        policy_id=policy_result.policy_id,
+                        reason=deny_reason,
+                        rule_ids=policy_result.rule_ids,
+                    ),
+                )
+                return policy_blocked_response(
+                    PolicyResult(
+                        action="require_approval",
+                        policy_id=policy_result.policy_id,
+                        reason=deny_reason,
+                        rule_ids=policy_result.rule_ids,
+                    ),
+                    approval_id=approval_id or None,
+                )
+            # Approved: continue proxying as a normal allow.
 
         if self._profile_store is not None and identity.profile_id is not None:
             projected_usage = estimate_request_token_usage(body)

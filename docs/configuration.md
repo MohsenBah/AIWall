@@ -268,7 +268,7 @@ Pluggable notifiers for notable events. Each entry selects a channel and the tri
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `channel` | string | yes | `stub`, `telegram`, `webhook`, `ntfy` |
-| `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error` |
+| `on` | string[] | `[]` | Triggers: `secret_blocked`, `policy_blocked`, `cost_threshold`, `daily_limit`, `provider_error`, `approval_required` |
 | `enabled` | boolean | `true` | Skip the channel when `false` |
 | `bot_token_env` | string | — | Env var holding the Telegram bot token (`telegram` channel) |
 | `chat_id` | string | — | Telegram chat or group id (`telegram` channel) |
@@ -303,6 +303,8 @@ The ntfy channel POSTs plain text to `{server}/{topic}` with `Title`, `Tags`, an
 
 `provider_error` fires when an upstream provider is unreachable or returns HTTP 5xx during a proxied request, and when optional heartbeat probes first detect an outage (see `heartbeat` below). Point a channel at `provider_error` to get notified of provider downtime.
 
+`approval_required` fires when an agent action is held for human approval (Phase 5.6).
+
 ### `heartbeat`
 
 Optional background probes of configured providers. On the first failure for a provider, AIWall emits `provider_error` (no repeat alerts while that provider stays unhealthy). Monitor AIWall itself for gateway-down via `GET /healthz` (returns `status: ok` while the process is up; includes `unhealthy_providers` when heartbeat has run).
@@ -330,14 +332,16 @@ Optional shell-command guardrails for agent tool calls. When enabled, AIWall sco
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | boolean | `false` | Enforce shell and file guardrails |
+| `approval_timeout_seconds` | integer | `60` | How long a held `require_approval` request waits before timing out |
 | `shell.warn_above` | integer | `40` | Warn when risk score ≥ this value |
 | `shell.block_above` | integer | `70` | Block when risk score ≥ this value |
-| `shell.require_approval_above` | integer | `90` | Require approval (HTTP 403 `approval_required`) when risk score ≥ this value |
+| `shell.require_approval_above` | integer | `90` | Hold the request for human approval when risk score ≥ this value |
 | `file.action` | string | `block` | Action for sensitive file paths: `block`, `warn`, or `require_approval` |
 
 ```yaml
 agent_guardrails:
   enabled: true
+  approval_timeout_seconds: 60
   shell:
     warn_above: 40
     block_above: 70
@@ -346,7 +350,20 @@ agent_guardrails:
     action: block
 ```
 
-Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical (`approval_required` until the Phase 5.6 approval workflow holds and releases requests). File tools that touch `.env`, SSH keys, cloud credential files, kubeconfigs, or similar paths are flagged with reason `sensitive-file-access:<rule_id>`.
+Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical and is **held** until an operator approves or denies it (or the timeout fires). File tools that touch `.env`, SSH keys, cloud credential files, kubeconfigs, or similar paths are flagged with reason `sensitive-file-access:<rule_id>`.
+
+### Approvals API (Phase 5.6)
+
+When a request action is `require_approval`, the proxy creates a pending approval, emits an `approval_required` alert (if configured), and waits.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/approvals?status=pending` | List pending approvals |
+| `GET` | `/approvals/{id}` | Fetch one approval (any status) |
+| `POST` | `/approvals/{id}/approve` | Approve and release the held request |
+| `POST` | `/approvals/{id}/deny` | Deny and return HTTP 403 to the client |
+
+Optional query param `decided_by` records who decided. Denied and timed-out responses include `approval_id` in the JSON body and `X-AIWall-Approval-Id` header.
 
 ## Environment variables
 

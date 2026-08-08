@@ -94,8 +94,10 @@ scanners:
 # Optional: agent shell/file guardrails (Phase 5). Off by default.
 # Scores come from the command risk engine (rm -rf / is critical, ls is low).
 # Sensitive paths (.env, SSH keys, cloud creds, etc.) use file.action.
+# Critical actions are held until approve/deny (or approval_timeout_seconds).
 # agent_guardrails:
 #   enabled: true
+#   approval_timeout_seconds: 60
 #   shell:
 #     warn_above: 40
 #     block_above: 70

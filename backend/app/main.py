@@ -14,6 +14,9 @@ import httpx
 from fastapi import FastAPI
 
 from app import __version__
+from app.agents.approval_broker import ApprovalBroker
+from app.agents.approval_store import ApprovalStore
+from app.agents.routes import create_approvals_router
 from app.alerts import RecordingNotifier, build_alert_dispatcher
 from app.alerts.heartbeat import HeartbeatMonitor
 from app.audit.writer import AuditWriter
@@ -28,10 +31,12 @@ logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0, read=300.0, write=60.0, pool=10.0)
 
 
-def _init_storage(config: AIWallConfig) -> tuple[Any, AuditWriter, ProfileStore]:
+def _init_storage(
+    config: AIWallConfig,
+) -> tuple[Any, AuditWriter, ProfileStore, ApprovalStore]:
     engine = create_engine_from_config(config)
     init_db(engine)
-    return engine, AuditWriter(engine), ProfileStore(engine)
+    return engine, AuditWriter(engine), ProfileStore(engine), ApprovalStore(engine)
 
 
 def create_app(
@@ -42,7 +47,7 @@ def create_app(
 ) -> FastAPI:
     resolved_path = resolve_config_path(config_path)
     config = load_config(resolved_path)
-    engine, audit_writer, profile_store = _init_storage(config)
+    engine, audit_writer, profile_store, approval_store = _init_storage(config)
     prices_path = resolve_prices_path(resolved_path, config.pricing.file)
     cost_estimator = CostEstimator(prices_path)
     alert_dispatcher = build_alert_dispatcher(
@@ -50,6 +55,7 @@ def create_app(
         http_client=http_client,
         recording_notifier=recording_notifier,
     )
+    approval_broker = ApprovalBroker()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -103,6 +109,8 @@ def create_app(
     app.state.policy_engine = PolicyEngine(resolved_path)
     app.state.cost_estimator = cost_estimator
     app.state.alert_dispatcher = alert_dispatcher
+    app.state.approval_store = approval_store
+    app.state.approval_broker = approval_broker
     if recording_notifier is not None:
         app.state.recording_notifier = recording_notifier
     if http_client is not None:
@@ -122,6 +130,7 @@ def create_app(
             "policies": len(config.policies),
             "profiles": len(app.state.profile_store.list()),
             "heartbeat_enabled": config.heartbeat.enabled,
+            "pending_approvals": len(app.state.approval_store.list_pending(limit=200)),
         }
         heartbeat = getattr(app.state, "heartbeat", None)
         if isinstance(heartbeat, HeartbeatMonitor):
@@ -129,6 +138,7 @@ def create_app(
         return payload
 
     app.include_router(proxy_router)
+    app.include_router(create_approvals_router())
     _register_web(app)
     return app
 

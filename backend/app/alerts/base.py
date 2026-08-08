@@ -13,6 +13,7 @@ TRIGGER_POLICY_BLOCKED = "policy_blocked"
 TRIGGER_COST_THRESHOLD = "cost_threshold"
 TRIGGER_DAILY_LIMIT = "daily_limit"
 TRIGGER_PROVIDER_ERROR = "provider_error"
+TRIGGER_APPROVAL_REQUIRED = "approval_required"
 
 KNOWN_TRIGGERS = frozenset(
     {
@@ -21,6 +22,7 @@ KNOWN_TRIGGERS = frozenset(
         TRIGGER_COST_THRESHOLD,
         TRIGGER_DAILY_LIMIT,
         TRIGGER_PROVIDER_ERROR,
+        TRIGGER_APPROVAL_REQUIRED,
     }
 )
 

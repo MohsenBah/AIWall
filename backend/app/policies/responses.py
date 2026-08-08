@@ -12,7 +12,11 @@ RULE_IDS_HEADER = "X-AIWall-Rule-Ids"
 POLICY_ACTION_HEADER = "X-AIWall-Policy-Action"
 
 
-def policy_blocked_response(result: PolicyResult) -> JSONResponse:
+def policy_blocked_response(
+    result: PolicyResult,
+    *,
+    approval_id: int | None = None,
+) -> JSONResponse:
     policy_name = result.policy_id or "unknown"
     if result.action == "require_approval":
         error: dict[str, object] = {
@@ -34,11 +38,15 @@ def policy_blocked_response(result: PolicyResult) -> JSONResponse:
         action_header = "block"
     if result.rule_ids:
         error["rule_ids"] = list(result.rule_ids)
+    if approval_id is not None:
+        error["approval_id"] = approval_id
 
     headers: dict[str, str] = {}
     if result.rule_ids:
         headers[RULE_IDS_HEADER] = ",".join(result.rule_ids)
     headers[POLICY_ACTION_HEADER] = action_header
+    if approval_id is not None:
+        headers["X-AIWall-Approval-Id"] = str(approval_id)
 
     return JSONResponse(
         status_code=403,

@@ -92,6 +92,8 @@ class AgentGuardrailsConfig(BaseModel):
     enabled: bool = False
     shell: ShellGuardrailConfig = Field(default_factory=ShellGuardrailConfig)
     file: FileGuardrailConfig = Field(default_factory=FileGuardrailConfig)
+    # How long a require_approval request waits before timing out (seconds).
+    approval_timeout_seconds: int = 60
 
 
 class CorsConfig(BaseModel):
