@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Agents{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Pending approvals</h1>
+            <p class="muted">
+                Hold risky agent actions until you approve or deny them.
+                Approving releases the waiting request; denying returns HTTP 403.
+            </p>
+        </div>
+    </div>
+
+    <div
+        id="approvals-table"
+        hx-get="/partials/approvals"
+        hx-trigger="every 5s"
+        hx-swap="innerHTML"
+    >
+        {% include "partials/approvals_table.html" %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Agent action log</h1>
+            <p class="muted">Recent tool, shell, and file-access actions recorded from proxied requests.</p>
+        </div>
+        <form id="agent-action-filters" class="filters">
+            <label>
+                Type
+                <select name="action_type">
+                    <option value="" {% if not selected_action_type %}selected{% endif %}>All</option>
+                    {% for t in action_types %}
+                    <option value="{{ t }}" {% if selected_action_type == t %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </form>
+    </div>
+
+    <div
+        id="agent-actions-table"
+        hx-get="/partials/agent-actions"
+        hx-trigger="change from:#agent-action-filters, every 10s"
+        hx-include="#agent-action-filters"
+        hx-swap="innerHTML"
+    >
+        {% include "partials/agent_actions_table.html" %}
+    </div>
+</section>
+{% endblock %}

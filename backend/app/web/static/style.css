@@ -226,6 +226,42 @@ table.events th {
 .badge-block { background: rgba(248, 81, 73, 0.15); color: var(--block); }
 .badge-redact { background: rgba(79, 140, 255, 0.15); color: var(--accent); }
 .badge-error { background: rgba(248, 81, 73, 0.15); color: var(--error); }
+.badge-shell { background: rgba(248, 81, 73, 0.15); color: var(--block); }
+.badge-file_access { background: rgba(210, 153, 34, 0.15); color: var(--warn); }
+.badge-tool_call { background: rgba(79, 140, 255, 0.15); color: var(--accent); }
+
+.panel + .panel {
+    margin-top: 1.5rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.btn {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.btn-approve {
+    border-color: var(--allow);
+    color: var(--allow);
+    background: rgba(46, 160, 67, 0.12);
+}
+
+.btn-deny {
+    border-color: var(--block);
+    color: var(--block);
+    background: rgba(248, 81, 73, 0.12);
+}
 
 .rules {
     display: flex;

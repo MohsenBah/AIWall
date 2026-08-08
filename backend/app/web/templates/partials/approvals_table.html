@@ -1,0 +1,49 @@
+{% if approvals %}
+<table class="events">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Time</th>
+            <th>Summary</th>
+            <th>Policy</th>
+            <th>Reason</th>
+            <th>Model</th>
+            <th>Decide</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in approvals %}
+        <tr class="event-row">
+            <td class="mono">#{{ item.id }}</td>
+            <td class="mono muted">
+                {{ item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else '-' }} UTC
+            </td>
+            <td>{{ item.summary or '—' }}</td>
+            <td class="mono muted">{{ item.policy_id or '—' }}</td>
+            <td class="muted">{{ item.reason or '—' }}</td>
+            <td class="mono">{{ item.model or '—' }}</td>
+            <td class="actions">
+                <button
+                    type="button"
+                    class="btn btn-approve"
+                    title="Approve #{{ item.id }}"
+                    hx-post="/agents/approvals/{{ item.id }}/approve?decided_by=dashboard"
+                    hx-target="#approvals-table"
+                    hx-swap="innerHTML"
+                >Approve</button>
+                <button
+                    type="button"
+                    class="btn btn-deny"
+                    title="Deny #{{ item.id }}"
+                    hx-post="/agents/approvals/{{ item.id }}/deny?decided_by=dashboard"
+                    hx-target="#approvals-table"
+                    hx-swap="innerHTML"
+                >Deny</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="empty">No pending approvals.</p>
+{% endif %}

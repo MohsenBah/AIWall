@@ -1,0 +1,38 @@
+{% if actions %}
+<table class="events">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Tool</th>
+            <th>Target</th>
+            <th>Request</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for action in actions %}
+        <tr class="event-row">
+            <td class="mono muted">
+                {{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') if action.timestamp else '-' }} UTC
+            </td>
+            <td>
+                <span class="badge badge-{{ action.action_type if action.action_type in ['shell','file_access','tool_call'] else 'allow' }}">
+                    {{ action.action_type }}
+                </span>
+            </td>
+            <td class="mono">{{ action.tool_name or '—' }}</td>
+            <td class="mono">{{ action.action_target }}</td>
+            <td class="mono muted">{{ action.request_id }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="empty">
+    {% if selected_action_type %}
+    No {{ selected_action_type }} actions recorded yet.
+    {% else %}
+    No agent actions recorded yet.
+    {% endif %}
+</p>
+{% endif %}

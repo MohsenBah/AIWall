@@ -365,6 +365,8 @@ When a request action is `require_approval`, the proxy creates a pending approva
 
 Optional query param `decided_by` records who decided. Denied and timed-out responses include `approval_id` in the JSON body and `X-AIWall-Approval-Id` header.
 
+Operators can also approve or deny from the control panel at `/agents`, which lists pending approvals and the recent agent action log.
+
 ## Environment variables
 
 | Variable | Default | Description |

@@ -12,6 +12,9 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.agents.approval_models import APPROVAL_APPROVED, APPROVAL_DENIED
+from app.agents.approval_store import ApprovalError
+from app.agents.types import KNOWN_ACTION_TYPES
 from app.policies.overrides import set_policy_enabled
 from app.reports.export import (
     DEFAULT_EXPORT_LIMIT,
@@ -29,6 +32,7 @@ TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
 
 DEFAULT_EVENT_LIMIT = 50
+DEFAULT_AGENT_ACTION_LIMIT = 50
 DEFAULT_SUMMARY_WINDOW_HOURS = 24
 DEFAULT_TREND_BUCKET_HOURS = 1
 DEFAULT_EXPLORER_PAGE_SIZE = 25
@@ -605,6 +609,120 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
             "partials/event_detail.html",
             event_detail_context(event, show_raw=True),
         )
+
+    def _approvals_context(request: Request) -> dict[str, object]:
+        store = getattr(request.app.state, "approval_store", None)
+        approvals = store.list_pending(limit=100) if store is not None else []
+        return {"approvals": approvals}
+
+    def _agent_actions_context(
+        request: Request,
+        *,
+        action_type: str | None,
+    ) -> dict[str, object]:
+        selected = action_type if action_type in KNOWN_ACTION_TYPES else None
+        actions = request.app.state.audit_writer.list_agent_actions(
+            action_type=selected,
+            limit=DEFAULT_AGENT_ACTION_LIMIT,
+        )
+        return {
+            "actions": actions,
+            "action_types": sorted(KNOWN_ACTION_TYPES),
+            "selected_action_type": selected,
+            "action_limit": DEFAULT_AGENT_ACTION_LIMIT,
+        }
+
+    def _decide_approval(
+        request: Request,
+        approval_id: int,
+        *,
+        status: str,
+        decided_by: str | None,
+    ) -> None:
+        store = getattr(request.app.state, "approval_store", None)
+        broker = getattr(request.app.state, "approval_broker", None)
+        if store is None or broker is None:
+            raise HTTPException(status_code=503, detail="Approval system unavailable")
+        try:
+            if status == APPROVAL_APPROVED:
+                store.approve(approval_id, decided_by=decided_by)
+            else:
+                store.deny(approval_id, decided_by=decided_by)
+        except ApprovalError as exc:
+            message = str(exc)
+            code = 404 if "not found" in message else 409
+            raise HTTPException(status_code=code, detail=message) from exc
+        broker.resolve(approval_id, status)
+
+    @router.get("/agents", response_class=HTMLResponse)
+    async def agents_page(
+        request: Request,
+        action_type: str | None = None,
+    ) -> HTMLResponse:
+        context = {
+            **_approvals_context(request),
+            **_agent_actions_context(request, action_type=action_type),
+        }
+        return templates.TemplateResponse(request, "agents.html", context)
+
+    @router.get("/partials/approvals", response_class=HTMLResponse)
+    async def approvals_partial(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "partials/approvals_table.html",
+            _approvals_context(request),
+        )
+
+    @router.get("/partials/agent-actions", response_class=HTMLResponse)
+    async def agent_actions_partial(
+        request: Request,
+        action_type: str | None = None,
+    ) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "partials/agent_actions_table.html",
+            _agent_actions_context(request, action_type=action_type),
+        )
+
+    @router.post("/agents/approvals/{approval_id}/approve")
+    async def agents_approve(
+        request: Request,
+        approval_id: int,
+        decided_by: str | None = Query(default="dashboard"),
+    ) -> Response:
+        _decide_approval(
+            request,
+            approval_id,
+            status=APPROVAL_APPROVED,
+            decided_by=decided_by,
+        )
+        if request.headers.get("hx-request") == "true":
+            return templates.TemplateResponse(
+                request,
+                "partials/approvals_table.html",
+                _approvals_context(request),
+            )
+        return RedirectResponse(url="/agents", status_code=303)
+
+    @router.post("/agents/approvals/{approval_id}/deny")
+    async def agents_deny(
+        request: Request,
+        approval_id: int,
+        decided_by: str | None = Query(default="dashboard"),
+    ) -> Response:
+        _decide_approval(
+            request,
+            approval_id,
+            status=APPROVAL_DENIED,
+            decided_by=decided_by,
+        )
+        if request.headers.get("hx-request") == "true":
+            return templates.TemplateResponse(
+                request,
+                "partials/approvals_table.html",
+                _approvals_context(request),
+            )
+        return RedirectResponse(url="/agents", status_code=303)
 
     return router
 

@@ -53,7 +53,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/profiles/` | Family/user profile model and CRUD storage |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
-| `app/agents/` | Agent action model, tool classification, shell risk scoring, sensitive-file monitoring, approval hold/release (Phase 5) |
+| `app/agents/` | Agent action model, tool classification, shell risk scoring, sensitive-file monitoring, approval hold/release, dashboard views (Phase 5) |
 | `app/storage/` | Database engine and schema migrations |
 | `app/reports/` | Family usage reports (weekly per-profile summary) |
 | `app/alerts/` | Pluggable alert dispatcher and channel notifiers |
@@ -81,10 +81,18 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `/usage` | GET | Model usage — tokens, cost, latency, volume per model/provider |
 | `/policies` | GET | Policy management — enable/disable toggles (hot reload) |
 | `/policies/{name}/enabled` | POST | Set a policy's `enabled` flag via `policy-overrides.yaml` |
+| `/agents` | GET | Agent action log + pending approvals (approve/deny) |
+| `/agents/approvals/{id}/approve` | POST | Approve a held agent action from the GUI |
+| `/agents/approvals/{id}/deny` | POST | Deny a held agent action from the GUI |
+| `/approvals` | GET | JSON list of pending approvals |
+| `/approvals/{id}/approve` | POST | JSON approve (releases held proxy request) |
+| `/approvals/{id}/deny` | POST | JSON deny (blocks held proxy request) |
 | `/blocked` | GET | Blocked-event review, filterable per profile (`?profile=<id>`) |
 | `/reports/weekly` | GET | Weekly family report (HTML; `?format=md` for Markdown) |
 | `/partials/events` | GET | HTMX fragment for filtered event table |
 | `/partials/blocked` | GET | HTMX fragment for the blocked-event table |
+| `/partials/approvals` | GET | HTMX fragment for pending approvals |
+| `/partials/agent-actions` | GET | HTMX fragment for the agent action log |
 | `/partials/events/{id}/detail` | GET | HTMX fragment for privacy-safe event detail (rule ids, reason) |
 | `/static/*` | GET | Dashboard CSS |
 
@@ -105,6 +113,7 @@ http://<aiwall-host>:8080/v1
 
 - **Audit events** — SQLite at the path configured in `logging.store` (default `sqlite:///data/aiwall.db`).
 - **Agent actions** — `agent_actions` rows linked by `request_id` / `audit_event_id`. Tool/function calls in chat requests are detected and classified as `tool_call`, `shell`, or `file_access`, with `action_target` set to the tool name, command, or path.
+- **Pending approvals** — `pending_approvals` rows for held `require_approval` requests; operators decide via `/agents` (GUI) or `/approvals` (JSON API).
 - **Configuration** — `aiwall.yaml` on disk; re-read by the policy engine on each evaluation.
 - **Pricing** — `prices.yaml` beside the config file (or path set in `pricing.file`).
 
