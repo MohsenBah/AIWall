@@ -329,10 +329,11 @@ Optional shell-command guardrails for agent tool calls. When enabled, AIWall sco
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `enabled` | boolean | `false` | Enforce shell risk thresholds |
+| `enabled` | boolean | `false` | Enforce shell and file guardrails |
 | `shell.warn_above` | integer | `40` | Warn when risk score ≥ this value |
 | `shell.block_above` | integer | `70` | Block when risk score ≥ this value |
 | `shell.require_approval_above` | integer | `90` | Require approval (HTTP 403 `approval_required`) when risk score ≥ this value |
+| `file.action` | string | `block` | Action for sensitive file paths: `block`, `warn`, or `require_approval` |
 
 ```yaml
 agent_guardrails:
@@ -341,9 +342,11 @@ agent_guardrails:
     warn_above: 40
     block_above: 70
     require_approval_above: 90
+  file:
+    action: block
 ```
 
-Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical (`approval_required` until the Phase 5.6 approval workflow holds and releases requests).
+Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical (`approval_required` until the Phase 5.6 approval workflow holds and releases requests). File tools that touch `.env`, SSH keys, cloud credential files, kubeconfigs, or similar paths are flagged with reason `sensitive-file-access:<rule_id>`.
 
 ## Environment variables
 

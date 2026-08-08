@@ -91,14 +91,17 @@ scanners:
 #   enabled: true
 #   interval_seconds: 60
 
-# Optional: agent shell guardrails (Phase 5). Off by default.
+# Optional: agent shell/file guardrails (Phase 5). Off by default.
 # Scores come from the command risk engine (rm -rf / is critical, ls is low).
+# Sensitive paths (.env, SSH keys, cloud creds, etc.) use file.action.
 # agent_guardrails:
 #   enabled: true
 #   shell:
 #     warn_above: 40
 #     block_above: 70
 #     require_approval_above: 90
+#   file:
+#     action: block   # block | warn | require_approval
 
 # Optional: browser CORS for Open WebUI Direct Connections.
 # cors:

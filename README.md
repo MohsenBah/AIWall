@@ -63,6 +63,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Tool/function-call classification | Done (Phase 5.2) |
 | Command risk scoring | Done (Phase 5.3) |
 | Dangerous-command policy | Done (Phase 5.4) |
+| Sensitive file-access monitoring | Done (Phase 5.5) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

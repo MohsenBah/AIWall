@@ -5,7 +5,10 @@
 from app.agents.classify import classify_function_call, parse_tool_arguments
 from app.agents.extract import extract_agent_actions_from_body
 from app.agents.guardrails import (
+    evaluate_agent_guardrails,
+    evaluate_file_guardrails,
     evaluate_shell_guardrails,
+    find_sensitive_file_matches,
     max_shell_risk_from_body,
     merge_policy_results,
 )
@@ -18,6 +21,7 @@ from app.agents.risk import (
     CommandRiskScore,
     score_shell_command,
 )
+from app.agents.sensitive_files import match_sensitive_path
 from app.agents.types import (
     ACTION_FILE_ACCESS,
     ACTION_SHELL,
@@ -39,8 +43,12 @@ __all__ = [
     "RISK_LOW",
     "RISK_MEDIUM",
     "classify_function_call",
+    "evaluate_agent_guardrails",
+    "evaluate_file_guardrails",
     "evaluate_shell_guardrails",
     "extract_agent_actions_from_body",
+    "find_sensitive_file_matches",
+    "match_sensitive_path",
     "max_shell_risk_from_body",
     "merge_policy_results",
     "parse_tool_arguments",

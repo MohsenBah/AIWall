@@ -12,7 +12,7 @@ import httpx
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from app.agents.guardrails import evaluate_shell_guardrails, merge_policy_results
+from app.agents.guardrails import evaluate_agent_guardrails, merge_policy_results
 from app.alerts.base import AlertEvent
 from app.alerts.dispatcher import (
     AlertDispatcher,
@@ -222,11 +222,11 @@ class ChatCompletionProxy:
         result = self._policy_engine.evaluate(context)
         result = _with_rule_ids(result, scan_result)
         fresh_config = self._policy_engine.reload()
-        shell_result = evaluate_shell_guardrails(
+        agent_result = evaluate_agent_guardrails(
             body,
             fresh_config.agent_guardrails,
         )
-        return merge_policy_results(result, shell_result)
+        return merge_policy_results(result, agent_result)
 
     async def forward(self, request: Request) -> Response | StreamingResponse | JSONResponse:
         body = await request.body()

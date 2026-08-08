@@ -79,11 +79,19 @@ class ShellGuardrailConfig(BaseModel):
     require_approval_above: int = 90
 
 
+class FileGuardrailConfig(BaseModel):
+    """Policy action when a sensitive file path is referenced."""
+
+    # block | warn | require_approval
+    action: str = "block"
+
+
 class AgentGuardrailsConfig(BaseModel):
     """Phase 5 agent tool/command guardrails."""
 
     enabled: bool = False
     shell: ShellGuardrailConfig = Field(default_factory=ShellGuardrailConfig)
+    file: FileGuardrailConfig = Field(default_factory=FileGuardrailConfig)
 
 
 class CorsConfig(BaseModel):
