@@ -5,6 +5,14 @@
 from app.agents.classify import classify_function_call, parse_tool_arguments
 from app.agents.extract import extract_agent_actions_from_body
 from app.agents.models import AgentActionRow
+from app.agents.risk import (
+    RISK_CRITICAL,
+    RISK_HIGH,
+    RISK_LOW,
+    RISK_MEDIUM,
+    CommandRiskScore,
+    score_shell_command,
+)
 from app.agents.types import (
     ACTION_FILE_ACCESS,
     ACTION_SHELL,
@@ -19,8 +27,14 @@ __all__ = [
     "ACTION_TOOL_CALL",
     "AgentAction",
     "AgentActionRow",
+    "CommandRiskScore",
     "KNOWN_ACTION_TYPES",
+    "RISK_CRITICAL",
+    "RISK_HIGH",
+    "RISK_LOW",
+    "RISK_MEDIUM",
     "classify_function_call",
     "extract_agent_actions_from_body",
     "parse_tool_arguments",
+    "score_shell_command",
 ]

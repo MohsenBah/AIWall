@@ -61,6 +61,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Settings page | Done (Phase 4.13) |
 | Agent action event model | Done (Phase 5.1) |
 | Tool/function-call classification | Done (Phase 5.2) |
+| Command risk scoring | Done (Phase 5.3) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

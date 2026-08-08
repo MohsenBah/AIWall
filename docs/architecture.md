@@ -53,7 +53,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/profiles/` | Family/user profile model and CRUD storage |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
-| `app/agents/` | Agent action model + tool-call extraction (Phase 5) |
+| `app/agents/` | Agent action model, tool-call classification, shell command risk scoring (Phase 5) |
 | `app/storage/` | Database engine and schema migrations |
 | `app/reports/` | Family usage reports (weekly per-profile summary) |
 | `app/alerts/` | Pluggable alert dispatcher and channel notifiers |
