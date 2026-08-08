@@ -53,6 +53,7 @@ Blocked requests never reach the upstream provider. Redacted requests reach the 
 | `app/profiles/` | Family/user profile model and CRUD storage |
 | `app/providers/` | Provider adapters and model-based routing |
 | `app/audit/` | SQLite audit event model and writer |
+| `app/agents/` | Agent action model + tool-call extraction (Phase 5) |
 | `app/storage/` | Database engine and schema migrations |
 | `app/reports/` | Family usage reports (weekly per-profile summary) |
 | `app/alerts/` | Pluggable alert dispatcher and channel notifiers |
@@ -103,6 +104,7 @@ http://<aiwall-host>:8080/v1
 ## Data storage
 
 - **Audit events** — SQLite at the path configured in `logging.store` (default `sqlite:///data/aiwall.db`).
+- **Agent actions** — `agent_actions` rows linked by `request_id` / `audit_event_id`, storing `action_type` (`tool_call`, `shell`, `file_access`) and `action_target` (tool name, command, or path) when tool/function calls appear in chat requests.
 - **Configuration** — `aiwall.yaml` on disk; re-read by the policy engine on each evaluation.
 - **Pricing** — `prices.yaml` beside the config file (or path set in `pricing.file`).
 

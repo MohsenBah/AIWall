@@ -9,6 +9,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
+from app.agents.extract import extract_agent_actions_from_body
 from app.audit.writer import AuditEvent, AuditWriter
 from app.config import AIWallConfig, ScannerConfig
 from app.scanners.secrets import redact_request_body
@@ -116,7 +117,7 @@ def log_proxy_event(
     matched_rule_ids = ",".join(rule_ids) if rule_ids else None
     categories_value = ",".join(sorted(categories)) if categories else None
 
-    audit_writer.write(
+    audit_row = audit_writer.write(
         AuditEvent(
             request_id=request_id,
             user_id=user_id,
@@ -139,3 +140,10 @@ def log_proxy_event(
             raw_response=raw_response,
         )
     )
+    agent_actions = extract_agent_actions_from_body(body)
+    if agent_actions:
+        audit_writer.write_agent_actions(
+            request_id=request_id,
+            audit_event_id=audit_row.id,
+            actions=agent_actions,
+        )

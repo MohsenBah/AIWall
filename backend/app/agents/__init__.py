@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Mohsen Bah
+# SPDX-License-Identifier: Apache-2.0
+"""AI agent guardrails (Phase 5): action model and extraction."""
+
+from app.agents.extract import extract_agent_actions_from_body
+from app.agents.models import AgentActionRow
+from app.agents.types import (
+    ACTION_FILE_ACCESS,
+    ACTION_SHELL,
+    ACTION_TOOL_CALL,
+    KNOWN_ACTION_TYPES,
+    AgentAction,
+)
+
+__all__ = [
+    "ACTION_FILE_ACCESS",
+    "ACTION_SHELL",
+    "ACTION_TOOL_CALL",
+    "AgentAction",
+    "AgentActionRow",
+    "KNOWN_ACTION_TYPES",
+    "extract_agent_actions_from_body",
+]

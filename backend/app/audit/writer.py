@@ -9,6 +9,8 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.engine import Engine
 
+from app.agents.models import AgentActionRow
+from app.agents.types import AgentAction
 from app.audit.models import AuditEventRow
 from app.storage.database import session_factory
 
@@ -216,6 +218,57 @@ class AuditWriter:
             session.commit()
             session.refresh(row)
             return row
+
+    def write_agent_actions(
+        self,
+        *,
+        request_id: str,
+        actions: tuple[AgentAction, ...] | list[AgentAction],
+        audit_event_id: int | None = None,
+        timestamp: datetime | None = None,
+    ) -> list[AgentActionRow]:
+        """Persist agent/tool actions linked to a proxy request."""
+        if not actions:
+            return []
+        when = timestamp or datetime.now(UTC)
+        rows: list[AgentActionRow] = []
+        with self._session_factory() as session:
+            for action in actions:
+                row = AgentActionRow(
+                    timestamp=when,
+                    request_id=request_id,
+                    audit_event_id=audit_event_id,
+                    action_type=action.action_type,
+                    action_target=action.action_target,
+                    tool_name=action.tool_name,
+                    arguments_preview=action.arguments_preview,
+                    tool_call_id=action.tool_call_id,
+                )
+                session.add(row)
+                rows.append(row)
+            session.commit()
+            for row in rows:
+                session.refresh(row)
+            return list(rows)
+
+    def list_agent_actions(
+        self,
+        *,
+        request_id: str | None = None,
+        action_type: str | None = None,
+        limit: int = 100,
+    ) -> list[AgentActionRow]:
+        from sqlalchemy import select
+
+        if limit < 1:
+            raise ValueError("limit must be >= 1")
+        with self._session_factory() as session:
+            stmt = select(AgentActionRow).order_by(AgentActionRow.id.desc()).limit(limit)
+            if request_id:
+                stmt = stmt.where(AgentActionRow.request_id == request_id)
+            if action_type:
+                stmt = stmt.where(AgentActionRow.action_type == action_type)
+            return list(session.scalars(stmt).all())
 
     def list_recent(
         self,

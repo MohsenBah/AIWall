@@ -45,11 +45,13 @@ def create_engine_from_config(config: AIWallConfig) -> Engine:
 
 def init_db(engine: Engine) -> None:
     # Import models so create_all registers every table on Base.metadata.
+    from app.agents import models as _agent_models  # noqa: F401
     from app.profiles import models as _profile_models  # noqa: F401
 
     Base.metadata.create_all(engine)
     _migrate_audit_schema(engine)
     _ensure_profiles_table(engine)
+    _ensure_agent_actions_table(engine)
 
 
 def _migrate_audit_schema(engine: Engine) -> None:
@@ -77,6 +79,16 @@ def _ensure_profiles_table(engine: Engine) -> None:
         if "profiles" in tables:
             return
     Base.metadata.create_all(engine, tables=[Base.metadata.tables["profiles"]])
+
+
+def _ensure_agent_actions_table(engine: Engine) -> None:
+    """Create agent_actions table on existing databases that predate Phase 5.1."""
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))
+        tables = {row[0] for row in rows}
+        if "agent_actions" in tables:
+            return
+    Base.metadata.create_all(engine, tables=[Base.metadata.tables["agent_actions"]])
 
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:

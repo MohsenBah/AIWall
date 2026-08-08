@@ -59,6 +59,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Heartbeat / provider-error alerts | Done (Phase 4.11) |
 | Event CSV/JSON export | Done (Phase 4.12) |
 | Settings page | Done (Phase 4.13) |
+| Agent action event model | Done (Phase 5.1) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
