@@ -1,0 +1,100 @@
+{% if message %}
+<p class="settings-flash" role="status">
+    {{ message }}
+    {% if purged is not none %}
+    · purged {{ purged }} expired event{{ '' if purged == 1 else 's' }}
+    {% endif %}
+</p>
+{% endif %}
+
+<section class="settings-section">
+    <h2>Providers</h2>
+    <p class="muted">Read-only view of providers from <span class="mono">aiwall.yaml</span>.</p>
+    {% if providers %}
+    <table class="events">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Base URL</th>
+                <th>Models</th>
+                <th>API key env</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for provider in providers %}
+            <tr class="event-row">
+                <td class="mono">{{ provider.name }}</td>
+                <td>{{ provider.type }}</td>
+                <td class="mono muted">{{ provider.base_url }}</td>
+                <td class="mono muted">
+                    {% if provider.models %}
+                    {{ provider.models | join(', ') }}
+                    {% else %}
+                    <span class="muted">*</span>
+                    {% endif %}
+                </td>
+                <td class="mono muted">{{ provider.api_key_env or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No providers configured.</p>
+    {% endif %}
+</section>
+
+<section class="settings-section">
+    <h2>Logging</h2>
+    <div class="settings-row">
+        <div>
+            <strong>Raw prompt logging</strong>
+            <p class="muted">
+                When on, prompts/responses are stored (secrets still masked).
+                The Prompt log page appears in the nav only while this is enabled.
+            </p>
+        </div>
+        <button
+            type="button"
+            class="toggle {% if log_raw_prompts %}toggle-on{% else %}toggle-off{% endif %}"
+            aria-pressed="{{ 'true' if log_raw_prompts else 'false' }}"
+            title="{% if log_raw_prompts %}Disable{% else %}Enable{% endif %} raw prompt logging"
+            hx-post="/settings/logging/raw-prompts?enabled={{ 'false' if log_raw_prompts else 'true' }}"
+            hx-target="#settings-body"
+            hx-swap="innerHTML"
+        >
+            {% if log_raw_prompts %}On{% else %}Off{% endif %}
+        </button>
+    </div>
+
+    <div class="settings-row">
+        <div>
+            <strong>Retention</strong>
+            <p class="muted">
+                Audit events older than this many days are deleted on save and at startup.
+            </p>
+        </div>
+        <form class="settings-form" id="retention-form">
+            <label>
+                Days
+                <input
+                    type="number"
+                    name="days"
+                    id="retention-days"
+                    min="1"
+                    step="1"
+                    value="{{ retention_days }}"
+                    required
+                >
+            </label>
+            <button
+                type="button"
+                class="button-secondary"
+                hx-post="/settings/logging/retention"
+                hx-target="#settings-body"
+                hx-swap="innerHTML"
+                hx-on:click="this.setAttribute('hx-post', '/settings/logging/retention?days=' + document.getElementById('retention-days').value)"
+            >Save</button>
+        </form>
+    </div>
+</section>

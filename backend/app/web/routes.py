@@ -21,6 +21,7 @@ from app.reports.export import (
     export_to_json,
 )
 from app.reports.weekly import build_weekly_report, render_markdown
+from app.settings.overrides import update_logging_settings
 from app.web.privacy import event_detail_context
 
 WEB_DIR = Path(__file__).resolve().parent
@@ -443,6 +444,97 @@ def create_web_router(templates: Jinja2Templates) -> APIRouter:
                 _policies_context(request),
             )
         return RedirectResponse(url="/policies", status_code=303)
+
+    def _settings_context(
+        request: Request,
+        *,
+        message: str | None = None,
+        purged: int | None = None,
+    ) -> dict[str, object]:
+        config = request.app.state.policy_engine.reload()
+        request.app.state.config = config
+        return {
+            "providers": config.providers,
+            "log_raw_prompts": config.logging.log_raw_prompts,
+            "retention_days": config.logging.retention_days,
+            "message": message,
+            "purged": purged,
+        }
+
+    def _reload_runtime_config(request: Request):
+        engine = request.app.state.policy_engine
+        engine.invalidate()
+        config = engine.reload()
+        request.app.state.config = config
+        return config
+
+    @router.get("/settings", response_class=HTMLResponse)
+    async def settings_page(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "settings.html",
+            _settings_context(request),
+        )
+
+    @router.get("/partials/settings", response_class=HTMLResponse)
+    async def settings_partial(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "partials/settings_body.html",
+            _settings_context(request),
+        )
+
+    @router.post("/settings/logging/raw-prompts")
+    async def settings_raw_prompts(
+        request: Request,
+        enabled: bool = Query(...),
+    ) -> Response:
+        update_logging_settings(
+            request.app.state.config_path,
+            log_raw_prompts=enabled,
+        )
+        _reload_runtime_config(request)
+        if request.headers.get("hx-request") == "true":
+            return templates.TemplateResponse(
+                request,
+                "partials/settings_body.html",
+                _settings_context(
+                    request,
+                    message=(
+                        "Raw prompt logging enabled."
+                        if enabled
+                        else "Raw prompt logging disabled."
+                    ),
+                ),
+            )
+        return RedirectResponse(url="/settings", status_code=303)
+
+    @router.post("/settings/logging/retention")
+    async def settings_retention(
+        request: Request,
+        days: int = Query(...),
+    ) -> Response:
+        if days < 1:
+            raise HTTPException(status_code=400, detail="retention days must be >= 1")
+        update_logging_settings(
+            request.app.state.config_path,
+            retention_days=days,
+        )
+        config = _reload_runtime_config(request)
+        purged = request.app.state.audit_writer.purge_expired_events(
+            config.logging.retention_days
+        )
+        if request.headers.get("hx-request") == "true":
+            return templates.TemplateResponse(
+                request,
+                "partials/settings_body.html",
+                _settings_context(
+                    request,
+                    message=f"Retention set to {days} days.",
+                    purged=purged,
+                ),
+            )
+        return RedirectResponse(url="/settings", status_code=303)
 
     def _require_prompt_logging(request: Request) -> None:
         config = request.app.state.policy_engine.reload()

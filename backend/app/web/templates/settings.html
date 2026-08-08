@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}AIWall - Settings{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h1>Settings</h1>
+            <p class="muted">
+                View configured providers and manage logging retention and raw-prompt
+                opt-in. Changes are saved to
+                <span class="mono">settings-overrides.yaml</span> and take effect
+                without a restart.
+            </p>
+        </div>
+    </div>
+
+    <div id="settings-body">
+        {% include "partials/settings_body.html" %}
+    </div>
+</section>
+{% endblock %}

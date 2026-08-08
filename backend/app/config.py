@@ -163,12 +163,20 @@ def load_config(path: Path | str | None = None) -> AIWallConfig:
         load_policy_overrides,
         policy_overrides_path,
     )
+    from app.settings.overrides import (
+        apply_settings_overrides,
+        load_settings_overrides,
+        settings_overrides_path,
+    )
 
     overrides = load_policy_overrides(policy_overrides_path(config_path))
     if overrides:
         config = config.model_copy(
             update={"policies": apply_policy_overrides(config.policies, overrides)}
         )
+    settings_overrides = load_settings_overrides(settings_overrides_path(config_path))
+    if settings_overrides:
+        config = apply_settings_overrides(config, settings_overrides)
     return config
 
 

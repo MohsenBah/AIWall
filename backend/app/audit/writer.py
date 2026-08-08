@@ -337,6 +337,30 @@ class AuditWriter:
             total_tokens=total_tokens,
         )
 
+    def purge_expired_events(
+        self,
+        retention_days: int,
+        *,
+        now: datetime | None = None,
+    ) -> int:
+        """Delete audit rows older than ``retention_days``. Returns deleted count."""
+        from sqlalchemy import delete, func, select
+
+        if retention_days < 1:
+            raise ValueError("retention_days must be >= 1")
+        cutoff = (now or datetime.now(UTC)) - timedelta(days=retention_days)
+        with self._session_factory() as session:
+            count_stmt = select(func.count()).select_from(AuditEventRow).where(
+                AuditEventRow.timestamp < cutoff
+            )
+            to_delete = int(session.execute(count_stmt).scalar_one() or 0)
+            if to_delete:
+                session.execute(
+                    delete(AuditEventRow).where(AuditEventRow.timestamp < cutoff)
+                )
+                session.commit()
+            return to_delete
+
     def get_by_id(self, event_id: int) -> AuditEventRow | None:
         from sqlalchemy import select
 

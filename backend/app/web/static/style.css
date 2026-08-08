@@ -351,6 +351,79 @@ a.linkish {
     color: var(--block);
 }
 
+.settings-section {
+    margin-top: 1.5rem;
+}
+
+.settings-section h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.05rem;
+}
+
+.settings-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border);
+}
+
+.settings-row:first-of-type {
+    border-top: none;
+    padding-top: 0.5rem;
+}
+
+.settings-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: end;
+}
+
+.settings-form label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.settings-form input[type="number"] {
+    width: 6rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.button-secondary {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.button-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.settings-flash {
+    margin: 0 0 1rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    border: 1px solid rgba(79, 140, 255, 0.35);
+    background: rgba(79, 140, 255, 0.1);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
 .explorer-meta {
     margin: 0 0 0.75rem;
     font-size: 0.85rem;

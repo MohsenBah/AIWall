@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import importlib.util
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,7 @@ from app.proxy.pricing import CostEstimator, resolve_prices_path
 from app.proxy.routes import router as proxy_router
 from app.storage.database import create_engine_from_config, init_db
 
+logger = logging.getLogger(__name__)
 DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0, read=300.0, write=60.0, pool=10.0)
 
 
@@ -52,6 +54,14 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.config = load_config(resolved_path)
+        try:
+            deleted = audit_writer.purge_expired_events(
+                app.state.config.logging.retention_days
+            )
+            if deleted:
+                logger.info("Purged %s audit events older than retention", deleted)
+        except Exception:
+            logger.exception("Audit retention purge failed on startup")
         heartbeat: HeartbeatMonitor | None = None
         try:
             if http_client is not None:

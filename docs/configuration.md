@@ -163,8 +163,8 @@ Cost-based policies use a pre-forward estimate (prompt tokens + `max_tokens` / `
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `store` | string | `sqlite:///data/aiwall.db` | SQLite database URL |
-| `log_raw_prompts` | boolean | `false` | Store prompt/response text in audit rows (opt-in). Detected secrets are always masked as `[REDACTED:<rule_id>]` before storage. When `true`, the `/prompts` viewer is available and shows a privacy warning banner. |
-| `retention_days` | integer | `90` | Reserved for future retention jobs (not enforced in MVP) |
+| `log_raw_prompts` | boolean | `false` | Store prompt/response text in audit rows (opt-in). Detected secrets are always masked as `[REDACTED:<rule_id>]` before storage. When `true`, the `/prompts` viewer is available and shows a privacy warning banner. Can also be toggled from the Settings page (`settings-overrides.yaml`). |
+| `retention_days` | integer | `90` | Delete audit events older than this many days (purged on startup and when retention is saved in Settings). |
 
 ### `pricing`
 
