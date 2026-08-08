@@ -60,6 +60,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Event CSV/JSON export | Done (Phase 4.12) |
 | Settings page | Done (Phase 4.13) |
 | Agent action event model | Done (Phase 5.1) |
+| Tool/function-call classification | Done (Phase 5.2) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 

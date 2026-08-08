@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """AI agent guardrails (Phase 5): action model and extraction."""
 
+from app.agents.classify import classify_function_call, parse_tool_arguments
 from app.agents.extract import extract_agent_actions_from_body
 from app.agents.models import AgentActionRow
 from app.agents.types import (
@@ -19,5 +20,7 @@ __all__ = [
     "AgentAction",
     "AgentActionRow",
     "KNOWN_ACTION_TYPES",
+    "classify_function_call",
     "extract_agent_actions_from_body",
+    "parse_tool_arguments",
 ]

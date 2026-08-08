@@ -1,21 +1,14 @@
 # SPDX-FileCopyrightText: 2026 Mohsen Bah
 # SPDX-License-Identifier: Apache-2.0
-"""Extract agent actions from OpenAI-compatible request bodies.
-
-Phase 5.1 stores tool calls with ``action_type`` + ``action_target``.
-Richer classification (shell / file) lands in Phase 5.2+.
-"""
+"""Extract and classify agent actions from OpenAI-compatible request bodies."""
 
 from __future__ import annotations
 
 import json
 from typing import Any
 
-from app.agents.types import (
-    ACTION_TOOL_CALL,
-    ARGUMENTS_PREVIEW_MAX,
-    AgentAction,
-)
+from app.agents.classify import classify_function_call
+from app.agents.types import ARGUMENTS_PREVIEW_MAX, AgentAction
 
 
 def _preview_arguments(raw: Any) -> str | None:
@@ -45,9 +38,13 @@ def _action_from_function(
     if not tool_name:
         return None
     call_id = tool_call_id.strip() if isinstance(tool_call_id, str) else None
+    action_type, action_target = classify_function_call(
+        name=tool_name,
+        arguments=arguments,
+    )
     return AgentAction(
-        action_type=ACTION_TOOL_CALL,
-        action_target=tool_name,
+        action_type=action_type,
+        action_target=action_target,
         tool_name=tool_name,
         arguments_preview=_preview_arguments(arguments),
         tool_call_id=call_id or None,
@@ -81,7 +78,7 @@ def _actions_from_tool_calls(tool_calls: Any) -> list[AgentAction]:
 
 
 def extract_agent_actions_from_body(body: bytes | None) -> tuple[AgentAction, ...]:
-    """Return agent actions found in a chat-completions request body."""
+    """Detect and classify agent actions in a chat-completions request body."""
     if not body:
         return ()
     try:
@@ -107,7 +104,7 @@ def extract_agent_actions_from_body(body: bytes | None) -> tuple[AgentAction, ..
                 if action is not None:
                     actions.append(action)
 
-    # Deduplicate identical tool_call_id + target pairs while preserving order.
+    # Deduplicate identical tool_call_id + type + target pairs while preserving order.
     seen: set[tuple[str | None, str, str]] = set()
     unique: list[AgentAction] = []
     for action in actions:

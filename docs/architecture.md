@@ -104,7 +104,7 @@ http://<aiwall-host>:8080/v1
 ## Data storage
 
 - **Audit events** — SQLite at the path configured in `logging.store` (default `sqlite:///data/aiwall.db`).
-- **Agent actions** — `agent_actions` rows linked by `request_id` / `audit_event_id`, storing `action_type` (`tool_call`, `shell`, `file_access`) and `action_target` (tool name, command, or path) when tool/function calls appear in chat requests.
+- **Agent actions** — `agent_actions` rows linked by `request_id` / `audit_event_id`. Tool/function calls in chat requests are detected and classified as `tool_call`, `shell`, or `file_access`, with `action_target` set to the tool name, command, or path.
 - **Configuration** — `aiwall.yaml` on disk; re-read by the policy engine on each evaluation.
 - **Pricing** — `prices.yaml` beside the config file (or path set in `pricing.file`).
 
