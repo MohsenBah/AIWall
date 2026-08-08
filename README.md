@@ -66,6 +66,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 | Sensitive file-access monitoring | Done (Phase 5.5) |
 | Approval workflow (hold / approve / deny) | Done (Phase 5.6) |
 | Agent dashboard (action log + approvals) | Done (Phase 5.7) |
+| Agent guardrails docs + coverage | Done (Phase 5.8) |
 | Web control panel (policy toggles, alerts) | Planned (Phase 4) |
 
 
@@ -75,6 +76,7 @@ AIWall sits between your applications and AI providers and gives you visibility,
 - **Proxies AI API traffic** — drop-in OpenAI-compatible endpoint for clients, scripts, and coding tools (Cursor, Claude Code, Continue.dev)
 - **Scans for secrets** — detect API keys, tokens, SSH keys, and `.env` content before they reach a provider
 - **Enforces policies** — allow, warn, block, or redact based on rules you can toggle from the GUI
+- **Guards agent tools** — score shell commands, flag sensitive file access, and hold risky actions for approve/deny
 - **Shows everything in a web control panel** — dashboard, event log, model usage, cost breakdown, policy management
 - **Alerts you** — Telegram, webhook, or ntfy notification when something risky is blocked
 - **Logs decisions** — privacy-preserving audit trail (raw prompts logged only if you opt in)
@@ -226,7 +228,7 @@ Clients point their base URL to AIWall:
 http://aiwall-host:8080/v1
 ```
 
-Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema, [docs/secret-scanning.md](docs/secret-scanning.md) for detectors, and [docs/architecture.md](docs/architecture.md) for request flow.
+Policies and providers are configured in `aiwall.yaml`. See [docs/configuration.md](docs/configuration.md) for the full schema, [docs/secret-scanning.md](docs/secret-scanning.md) for detectors, [docs/agent-guardrails.md](docs/agent-guardrails.md) for agent tool/shell/file guardrails, and [docs/architecture.md](docs/architecture.md) for request flow.
 
 ## Contributing
 

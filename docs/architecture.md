@@ -12,8 +12,9 @@ Client (curl, Cursor, Open WebUI, script)
     v
 AIWall (FastAPI)
     |
-    +-- Policy Engine      allow / warn / block
+    +-- Policy Engine      allow / warn / block / redact
     +-- Secret Scanner     regex on request body
+    +-- Agent Guardrails   shell risk, sensitive files, approvals
     +-- Cost Estimator     prices.yaml + token usage
     +-- Provider Router    model -> provider
     +-- Audit Logger       SQLite
@@ -34,10 +35,11 @@ Upstream provider (OpenAI, Ollama, ...)
    - `redact` masks matched secrets in the request body, then continues.
    - `warn` is recorded but the request continues.
    - otherwise the request is allowed.
-6. **Secret scan** — regex and entropy rules run on message content before forwarding; results feed `input.contains_secret` policies.
-7. **Cost estimate (pre-forward)** — prompt tokens and `max_tokens` hints are used to estimate cost for `estimated_cost` policy conditions.
-8. **Forward** — non-streaming: full upstream response; streaming: SSE chunks passed through to the client.
-9. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency, redaction count, `user_id`).
+6. **Agent guardrails** (optional) — tool/shell/file actions are classified; shell risk and sensitive paths can warn, block, or hold for approval. See [agent-guardrails.md](agent-guardrails.md).
+7. **Secret scan** — regex and entropy rules run on message content before forwarding; results feed `input.contains_secret` policies.
+8. **Cost estimate (pre-forward)** — prompt tokens and `max_tokens` hints are used to estimate cost for `estimated_cost` policy conditions.
+9. **Forward** — non-streaming: full upstream response; streaming: SSE chunks passed through to the client.
+10. **Audit** — every request writes a row to SQLite (`decision`, `reason`, tokens, estimated cost, latency, redaction count, `user_id`). Agent tool actions are stored in `agent_actions` when present.
 
 Blocked requests never reach the upstream provider. Redacted requests reach the provider with secrets masked.
 

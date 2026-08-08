@@ -352,6 +352,8 @@ agent_guardrails:
 
 Example: `ls` is low risk (allowed); `rm -rf /tmp/x` is high (blocked); `rm -rf /` is critical and is **held** until an operator approves or denies it (or the timeout fires). File tools that touch `.env`, SSH keys, cloud credential files, kubeconfigs, or similar paths are flagged with reason `sensitive-file-access:<rule_id>`.
 
+Operator guide: [agent-guardrails.md](agent-guardrails.md).
+
 ### Approvals API (Phase 5.6)
 
 When a request action is `require_approval`, the proxy creates a pending approval, emits an `approval_required` alert (if configured), and waits.
